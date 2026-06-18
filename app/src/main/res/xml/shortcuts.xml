@@ -1,0 +1,14 @@
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutId="quick_expense"
+        android:shortcutLongLabel="@string/quick_expense_long"
+        android:shortcutShortLabel="@string/quick_expense_short">
+
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.nextgen.expend.MainActivity"
+            android:targetPackage="com.nextgen.expend" />
+    </shortcut>
+</shortcuts>
