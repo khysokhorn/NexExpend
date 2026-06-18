@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "75103648473",
+    "project_id": "omega-mile-279821",
+    "storage_bucket": "omega-mile-279821.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:75103648473:android:8ce06a25802924ec389cc8",
+        "android_client_info": {
+          "package_name": "com.nextgen.expend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "75103648473-j61p2jq5oam90egmugkqgqp3im49bib3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGfEM23N7kJjUtLw8F8o9L0PSmPz2XykQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "75103648473-j61p2jq5oam90egmugkqgqp3im49bib3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
