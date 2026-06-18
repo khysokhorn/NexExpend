@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Search - Monolith Finance</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "surface-container-highest": "#e2e2e2",
+                  "outline": "#7e7576",
+                  "on-surface": "#1a1c1c",
+                  "surface": "#f9f9f9",
+                  "on-primary": "#ffffff",
+                  "on-background": "#1a1c1c",
+                  "on-surface-variant": "#4c4546",
+                  "on-secondary-fixed-variant": "#464747",
+                  "primary-fixed": "#e2e2e2",
+                  "inverse-on-surface": "#f1f1f1",
+                  "error-container": "#ffdad6",
+                  "on-secondary-fixed": "#1b1c1c",
+                  "tertiary-fixed": "#e2e2e2",
+                  "surface-variant": "#e2e2e2",
+                  "on-tertiary-container": "#848484",
+                  "tertiary": "#000000",
+                  "secondary": "#5e5e5e",
+                  "on-primary-container": "#848484",
+                  "on-error": "#ffffff",
+                  "secondary-fixed-dim": "#c7c6c6",
+                  "inverse-primary": "#c6c6c6",
+                  "surface-container-lowest": "#ffffff",
+                  "surface-container": "#eeeeee",
+                  "surface-bright": "#f9f9f9",
+                  "tertiary-container": "#1b1b1b",
+                  "outline-variant": "#cfc4c5",
+                  "on-error-container": "#93000a",
+                  "inverse-surface": "#2f3131",
+                  "error": "#ba1a1a",
+                  "on-primary-fixed-variant": "#474747",
+                  "secondary-fixed": "#e3e2e2",
+                  "secondary-container": "#e3e2e2",
+                  "on-tertiary-fixed-variant": "#474747",
+                  "on-secondary-container": "#646464",
+                  "background": "#f9f9f9",
+                  "on-secondary": "#ffffff",
+                  "surface-container-low": "#f3f3f3",
+                  "on-tertiary": "#ffffff",
+                  "on-primary-fixed": "#1b1b1b",
+                  "surface-container-high": "#e8e8e8",
+                  "surface-dim": "#dadada",
+                  "surface-tint": "#5e5e5e",
+                  "primary-fixed-dim": "#c6c6c6",
+                  "primary-container": "#1b1b1b",
+                  "primary": "#000000",
+                  "tertiary-fixed-dim": "#c6c6c6",
+                  "on-tertiary-fixed": "#1b1b1b"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.125rem",
+                  "lg": "0.25rem",
+                  "xl": "0.5rem",
+                  "full": "0.75rem"
+          },
+          "spacing": {
+                  "xl": "40px",
+                  "md": "16px",
+                  "gutter": "16px",
+                  "sm": "8px",
+                  "lg": "24px",
+                  "xs": "4px",
+                  "container-margin": "20px",
+                  "base": "4px"
+          },
+          "fontFamily": {
+                  "headline-lg": ["Inter"],
+                  "display-lg": ["Inter"],
+                  "label-sm": ["Inter"],
+                  "numeric-xl": ["Inter"],
+                  "body-lg": ["Inter"],
+                  "body-md": ["Inter"],
+                  "headline-md": ["Inter"],
+                  "label-md": ["Inter"],
+                  "headline-lg-mobile": ["Inter"]
+          },
+          "fontSize": {
+                  "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                  "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                  "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                  "numeric-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+                  "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                  "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                  "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                  "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                  "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .search-input-focus:focus {
+      outline: none;
+      border-bottom-color: #000000;
+    }
+    /* Custom thin scrollbar for a premium look */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f9f9f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cfc4c5;
+      border-radius: 2px;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-surface dark:bg-on-surface border-b border-outline-variant dark:border-outline flex justify-between items-center px-gutter h-16 transition-all duration-300" id="top-app-bar">
+<div class="flex items-center gap-4 w-full">
+<button class="active:scale-95 transition-transform text-primary dark:text-on-primary">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<!-- Search Input Container -->
+<div class="flex-grow flex items-center relative group">
+<span class="material-symbols-outlined absolute left-0 text-on-surface-variant dark:text-on-secondary-fixed-variant">search</span>
+<input autofocus="" class="w-full bg-transparent border-b border-outline-variant dark:border-outline py-2 pl-8 pr-4 font-body-md text-body-md search-input-focus transition-all duration-300 focus:border-b-2" placeholder="Search transactions..." type="text"/>
+</div>
+<button class="active:scale-95 transition-transform text-on-surface-variant dark:text-on-secondary-fixed-variant">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow px-gutter py-xl overflow-y-auto pb-24">
+<!-- Recent Searches -->
+<section class="mb-xl">
+<div class="flex justify-between items-end mb-md">
+<h2 class="font-headline-md text-headline-md text-primary">Recent Searches</h2>
+<button class="text-label-md font-label-md text-secondary hover:underline transition-all">Clear All</button>
+</div>
+<div class="space-y-xs">
+<!-- List Item 1 -->
+<div class="flex items-center justify-between p-md bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer group rounded-lg">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-on-surface-variant">history</span>
+<span class="font-body-md text-body-md">Apple Store</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity">north_west</span>
+</div>
+<!-- List Item 2 -->
+<div class="flex items-center justify-between p-md bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer group rounded-lg border-t border-outline-variant">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-on-surface-variant">history</span>
+<span class="font-body-md text-body-md">Rent</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity">north_west</span>
+</div>
+<!-- List Item 3 -->
+<div class="flex items-center justify-between p-md bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer group rounded-lg border-t border-outline-variant">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-on-surface-variant">history</span>
+<span class="font-body-md text-body-md">Starbucks</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity">north_west</span>
+</div>
+</div>
+</section>
+<!-- Suggested Categories -->
+<section class="mb-xl">
+<h2 class="font-headline-md text-headline-md text-primary mb-md">Suggested Categories</h2>
+<!-- Asymmetric Grid for Categories -->
+<div class="grid grid-cols-2 md:grid-cols-3 gap-md">
+<!-- Category Card 1 -->
+<div class="aspect-square bg-primary text-on-primary p-md flex flex-col justify-between active:scale-[0.98] transition-transform cursor-pointer">
+<span class="material-symbols-outlined text-3xl">restaurant</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Dining</span>
+</div>
+<!-- Category Card 2 -->
+<div class="aspect-square bg-surface-container-high border border-outline-variant p-md flex flex-col justify-between hover:bg-surface-container-highest transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-3xl">shopping_bag</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Shopping</span>
+</div>
+<!-- Category Card 3 -->
+<div class="aspect-square bg-surface-container-high border border-outline-variant p-md flex flex-col justify-between hover:bg-surface-container-highest transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-3xl">receipt</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Bills</span>
+</div>
+<!-- Category Card 4 -->
+<div class="aspect-square bg-surface-container-high border border-outline-variant p-md flex flex-col justify-between hover:bg-surface-container-highest transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-3xl">commute</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Travel</span>
+</div>
+<!-- Category Card 5 -->
+<div class="aspect-square bg-surface-container-high border border-outline-variant p-md flex flex-col justify-between hover:bg-surface-container-highest transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-3xl">health_and_safety</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Health</span>
+</div>
+<!-- Category Card 6 -->
+<div class="aspect-square bg-surface-container-high border border-outline-variant p-md flex flex-col justify-between hover:bg-surface-container-highest transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-3xl">more_horiz</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Others</span>
+</div>
+</div>
+</section>
+<!-- Visual Polish: Minimalist Data Density -->
+<section>
+<h2 class="font-headline-md text-headline-md text-primary mb-md">Trending Merchant Tags</h2>
+<div class="flex flex-wrap gap-sm">
+<span class="px-md py-xs bg-surface-container-low border border-outline-variant rounded-full font-label-md text-label-md text-on-surface-variant hover:border-primary transition-colors cursor-pointer">#AmazonPrime</span>
+<span class="px-md py-xs bg-surface-container-low border border-outline-variant rounded-full font-label-md text-label-md text-on-surface-variant hover:border-primary transition-colors cursor-pointer">#Netflix</span>
+<span class="px-md py-xs bg-surface-container-low border border-outline-variant rounded-full font-label-md text-label-md text-on-surface-variant hover:border-primary transition-colors cursor-pointer">#UberEats</span>
+<span class="px-md py-xs bg-surface-container-low border border-outline-variant rounded-full font-label-md text-label-md text-on-surface-variant hover:border-primary transition-colors cursor-pointer">#TeslaSupercharger</span>
+<span class="px-md py-xs bg-surface-container-low border border-outline-variant rounded-full font-label-md text-label-md text-on-surface-variant hover:border-primary transition-colors cursor-pointer">#Subscription</span>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 h-16 bg-surface dark:bg-on-surface border-t border-outline-variant dark:border-outline flex justify-around items-center px-container-margin transition-all duration-300" id="bottom-nav">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-secondary-fixed-variant hover:opacity-80 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined">home</span>
+</a>
+<!-- Transactions (Receipt Long) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-secondary-fixed-variant hover:opacity-80 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+</a>
+<!-- Add (Active State for Search Context often implies discovery/action) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-secondary-fixed-variant hover:opacity-80 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined">add_circle</span>
+</a>
+<!-- Insights -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-secondary-fixed-variant hover:opacity-80 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined">insights</span>
+</a>
+</nav>
+<script>
+    // Micro-interactions
+    document.querySelectorAll('.active\\:scale-95, .active\\:scale-90').forEach(button => {
+      button.addEventListener('mousedown', () => {
+        button.style.transform = 'scale(0.95)';
+      });
+      button.addEventListener('mouseup', () => {
+        button.style.transform = 'scale(1)';
+      });
+      button.addEventListener('mouseleave', () => {
+        button.style.transform = 'scale(1)';
+      });
+    });
+
+    // Simple scroll behavior for header
+    const header = document.getElementById('top-app-bar');
+    const main = document.querySelector('main');
+    main.addEventListener('scroll', () => {
+      if (main.scrollTop > 10) {
+        header.classList.add('shadow-sm');
+      } else {
+        header.classList.remove('shadow-sm');
+      }
+    });
+
+    // Fake Search Filter Logic Placeholder
+    const searchInput = document.querySelector('input');
+    searchInput.addEventListener('input', (e) => {
+      console.log('Searching for:', e.target.value);
+      // In a real app, this would trigger result filtering
+    });
+  </script>
+</body></html>

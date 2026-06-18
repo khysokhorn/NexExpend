@@ -1,48 +1,26 @@
 package com.nextgen.expend
 
-import android.app.Activity
-import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
-import android.provider.Settings
 import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.platform.LocalView
-import androidx.core.net.toUri
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
+import androidx.navigation.compose.rememberNavController
+import com.nextgen.expend.navigation.AppNavHost
+import com.nextgen.expend.ui.theme.NexExpendTheme
+import com.nextgen.expend.ui.viewmodel.TransactionViewModel
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivity : ComponentActivity() {
-    private val overlayPermission = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {
-        if (Settings.canDrawOverlays(this)) {
-            startService(Intent(this, QuickExpenseOverlayService::class.java))
-        }
-        finish()
-    }
+    private val transactionViewModel: TransactionViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        if (!Settings.canDrawOverlays(this)) {
-            overlayPermission.launch(
-                Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    "package:$packageName".toUri()
-                )
-            )
-            return
+        enableEdgeToEdge()
+        setContent {
+            NexExpendTheme {
+                val navController = rememberNavController()
+                AppNavHost(navController = navController, viewModel = transactionViewModel)
+            }
         }
-        startService(Intent(this, QuickExpenseOverlayService::class.java))
-        finish()
     }
-
-
 }
