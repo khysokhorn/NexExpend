@@ -3,11 +3,12 @@ package com.nextgen.expend
 import android.app.Service
 import android.content.Intent
 import android.graphics.PixelFormat
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager
-import androidx.compose.material3.MaterialTheme
+import androidx.annotation.RequiresApi
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -23,9 +24,8 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.nextgen.expend.dialog.QuickExpenseTopPopup
 import com.nextgen.expend.ui.theme.NexExpendTheme
 
-class QuickExpenseOverlayService : Service(),
-    LifecycleOwner,
-    SavedStateRegistryOwner,
+@RequiresApi(Build.VERSION_CODES.O)
+class QuickExpenseOverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner,
     ViewModelStoreOwner {
 
     private lateinit var windowManager: WindowManager
@@ -33,8 +33,7 @@ class QuickExpenseOverlayService : Service(),
 
     private val lifecycleRegistry = LifecycleRegistry(this)
 
-    private val savedStateRegistryController =
-        SavedStateRegistryController.create(this)
+    private val savedStateRegistryController = SavedStateRegistryController.create(this)
 
     private val vmStore = ViewModelStore()
 
@@ -59,6 +58,7 @@ class QuickExpenseOverlayService : Service(),
         showOverlay()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun showOverlay() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
@@ -71,17 +71,12 @@ class QuickExpenseOverlayService : Service(),
             setContent {
                 NexExpendTheme {
                     QuickExpenseTopPopup(
-                        onSave = {
-                            closeOverlay()
-                        },
-                        onDismiss = {
-                            closeOverlay()
-                        }
+                        onSave = { closeOverlay() },
+                        onDismiss = { closeOverlay() }
                     )
                 }
             }
         }
-
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -90,8 +85,8 @@ class QuickExpenseOverlayService : Service(),
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            y = 80
+            gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+            softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
         }
 
         overlayView = composeView
@@ -129,4 +124,7 @@ class QuickExpenseOverlayService : Service(),
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+
 }
+
