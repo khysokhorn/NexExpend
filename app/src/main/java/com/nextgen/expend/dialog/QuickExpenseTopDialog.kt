@@ -1,7 +1,6 @@
 package com.nextgen.expend.dialog
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -9,255 +8,315 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
+import com.nextgen.expend.data.model.Category
 
-data class ExpenseInput(
-    val amount: Double = 0.0,
-    val category: String = "",
-    val imageUri: String? = null,
-    val note: String = "",
-    val createdAt: Long = System.currentTimeMillis()
-)
-
-// --- Color palette ---
-private val SurfaceDark = Color(0xFF1A1B2E)
-private val SurfaceCard = Color(0xFF232440)
+// --- Ultra-premium compact color tokens ---
+private val GlassBg = Color(0xE60F101A) // Semi-transparent ultra dark
 private val AccentCyan = Color(0xFF00E5CC)
 private val AccentTeal = Color(0xFF00B4D8)
 private val TextPrimary = Color(0xFFF0F0F5)
 private val TextSecondary = Color(0xFFA0A0B8)
-private val FieldBorder = Color(0xFF3A3B5C)
-private val FieldBorderFocused = Color(0xFF00E5CC)
-private val DisabledButton = Color(0xFF3A3B5C)
+private val BorderColor = Color(0xFF2E2F4A)
+private val BorderFocused = Color(0xFF00E5CC)
 
+private val quickCategories = listOf(
+    Category.DINING,
+    Category.SHOPPING,
+    Category.TRANSPORT,
+    Category.GROCERIES,
+    Category.BILLS,
+    Category.HEALTH,
+    Category.FUN,
+    Category.OTHER
+)
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickExpenseTopPopup(
-    onSave: (ExpenseInput) -> Unit,
+    onSave: (amount: Double, category: Category, note: String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var amount by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("") }
+    var amountStr by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf(Category.DINING) }
+    var note by remember { mutableStateOf("") }
     var visible by remember { mutableStateOf(false) }
+    var showCategorySelector by remember { mutableStateOf(false) }
+
+    val amountFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         visible = true
+        // Auto-request focus for amount input to trigger system keyboard
+        amountFocusRequester.requestFocus()
     }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = TextPrimary,
         unfocusedTextColor = TextPrimary,
         cursorColor = AccentCyan,
-        focusedBorderColor = FieldBorderFocused,
-        unfocusedBorderColor = FieldBorder,
+        focusedBorderColor = BorderFocused,
+        unfocusedBorderColor = BorderColor,
         focusedLabelColor = AccentCyan,
-        unfocusedLabelColor = TextSecondary
+        unfocusedLabelColor = TextSecondary,
+        focusedContainerColor = Color.Transparent,
+        unfocusedContainerColor = Color.Transparent
     )
 
     AnimatedVisibility(
         visible = visible,
         enter = slideInVertically(
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioLowBouncy,
-                stiffness = Spring.StiffnessMediumLow
-            ),
+            animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
             initialOffsetY = { it }
-        ) + fadeIn(animationSpec = tween(300)),
+        ) + fadeIn(animationSpec = tween(200)),
         exit = slideOutVertically(
-            animationSpec = tween(250),
+            animationSpec = tween(150),
             targetOffsetY = { it }
-        ) + fadeOut(animationSpec = tween(200))
+        ) + fadeOut(animationSpec = tween(100))
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Transparent
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .border(1.dp, BorderColor, RoundedCornerShape(24.dp)),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = GlassBg),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                SurfaceDark.copy(alpha = 0.97f),
-                                SurfaceCard.copy(alpha = 0.99f)
-                            )
-                        )
-                    )
+                    .padding(16.dp)
+                    .navigationBarsPadding()
+                    .imePadding()
             ) {
-                // Subtle top accent line
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 10.dp)
-                        .height(4.dp)
-                        .fillMaxWidth(0.12f)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(AccentCyan, AccentTeal)
-                            )
-                        )
-                )
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .imePadding()
-                        .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                // Header Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Title
-                    Text(
-                        text = "Quick Expense",
-                        color = TextPrimary,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.3.sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(AccentCyan)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Quick Expense",
+                            color = TextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.2.sp
+                        )
+                    }
 
-                    // Amount field
-                    OutlinedTextField(
-                        value = amount,
-                        onValueChange = { amount = it },
-                        label = {
-                            Text(
-                                "Amount",
-                                style = TextStyle(fontSize = 14.sp)
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = textFieldColors,
-                        textStyle = TextStyle(
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        ),
-                        singleLine = true
-                    )
-
-                    // Category field
-                    OutlinedTextField(
-                        value = category,
-                        onValueChange = { category = it },
-                        label = {
-                            Text(
-                                "Category",
-                                style = TextStyle(fontSize = 14.sp)
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = textFieldColors,
-                        textStyle = TextStyle(
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        ),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(28.dp)
                     ) {
-                        TextButton(onClick = onDismiss) {
-                            Text(
-                                "Cancel",
-                                color = TextSecondary,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                        Icon(
+                            Icons.Outlined.Close,
+                            contentDescription = "Close",
+                            tint = TextSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
 
-                        Button(
-                            enabled = amount.toDoubleOrNull() != null && category.isNotBlank(),
-                            onClick = {
-                                val amountVal = amount.toDoubleOrNull() ?: 0.0
-                                onSave(
-                                    ExpenseInput(
-                                        amount = amountVal,
-                                        category = category
-                                    )
-                                )
+                Spacer(Modifier.height(12.dp))
+
+                // Input Controls Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Category circular selector button
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(GlassBg.copy(alpha = 0.12f))
+                            .border(1.5.dp, Color.White , CircleShape)
+                            .clickable { showCategorySelector = !showCategorySelector },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            selectedCategory.icon,
+                            contentDescription = selectedCategory.label,
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    // Amount Text Input (Using system numeric keyboard)
+                    OutlinedTextField(
+                        value = amountStr,
+                        onValueChange = { input ->
+                            // Numeric validation
+                            if (input.isEmpty() || input.toDoubleOrNull() != null) {
+                                amountStr = input
+                            }
+                        },
+                        label = { Text("Amount ($)", style = TextStyle(fontSize = 11.sp)) },
+                        modifier = Modifier
+                            .weight(1.2f)
+                            .focusRequester(amountFocusRequester),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = textFieldColors,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Next
+                        ),
+                        textStyle = TextStyle(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextPrimary
+                        )
+                    )
+
+                    // Note Text Input
+                    OutlinedTextField(
+                        value = note,
+                        onValueChange = { note = it },
+                        label = { Text("Remark", style = TextStyle(fontSize = 11.sp)) },
+                        modifier = Modifier.weight(1.5f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = textFieldColors,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                val amountVal = amountStr.toDoubleOrNull() ?: 0.0
+                                if (amountVal > 0.0) {
+                                    onSave(amountVal, selectedCategory, note)
+                                }
+                            }
+                        ),
+                        textStyle = TextStyle(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = TextPrimary
+                        )
+                    )
+
+                    // Quick Save FAB style button
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                if (amountStr.toDoubleOrNull() != null && amountStr.toDoubleOrNull()!! > 0.0) {
+                                    Brush.horizontalGradient(listOf(AccentCyan, AccentTeal))
+                                } else {
+                                    Brush.linearGradient(listOf(BorderColor, BorderColor))
+                                }
+                            )
+                            .clickable(
+                                enabled = amountStr.toDoubleOrNull() != null && amountStr.toDoubleOrNull()!! > 0.0
+                            ) {
+                                val amountVal = amountStr.toDoubleOrNull() ?: 0.0
+                                onSave(amountVal, selectedCategory, note)
                             },
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AccentCyan,
-                                contentColor = SurfaceDark,
-                                disabledContainerColor = DisabledButton,
-                                disabledContentColor = TextSecondary
-                            )
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Outlined.Check,
+                            contentDescription = "Save",
+                            tint = if (amountStr.toDoubleOrNull() != null && amountStr.toDoubleOrNull()!! > 0.0) GlassBg else TextSecondary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                // Smoothly animated Category selector drawer/row
+                AnimatedVisibility(visible = showCategorySelector) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Spacer(Modifier.height(12.dp))
+                        HorizontalDivider(color = BorderColor, thickness = 0.5.dp)
+                        Spacer(Modifier.height(8.dp))
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp)
                         ) {
-                            Text(
-                                "Save",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
-                            )
+                            items(quickCategories) { cat ->
+                                val isSelected = cat == selectedCategory
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(
+                                            if (isSelected) AccentCyan.copy(alpha = 0.15f)
+                                            else Color.Transparent
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) AccentCyan else BorderColor,
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .clickable {
+                                            selectedCategory = cat
+                                            showCategorySelector = false
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            cat.icon,
+                                            contentDescription = cat.label,
+                                            tint = if (isSelected) AccentCyan else TextSecondary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = cat.label,
+                                            color = if (isSelected) AccentCyan else TextSecondary,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
     }
-}
-
-
-@Composable
-fun Window(x0: Nothing?) {
-    TODO("Not yet implemented")
 }

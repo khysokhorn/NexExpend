@@ -2,13 +2,13 @@
     <shortcut
         android:enabled="true"
         android:icon="@mipmap/ic_launcher"
-        android:shortcutId="quick_expense"
+        android:shortcutId="quick_expense_v3"
         android:shortcutLongLabel="@string/quick_expense_long"
         android:shortcutShortLabel="@string/quick_expense_short">
 
         <intent
-            android:action="android.intent.action.VIEW"
-            android:targetClass="com.nextgen.expend.MainActivity"
+            android:action="com.nextgen.expend.ACTION_QUICK_EXPENSE"
+            android:targetClass="com.nextgen.expend.QuickExpenseTrampolineActivity"
             android:targetPackage="com.nextgen.expend" />
     </shortcut>
 </shortcuts>

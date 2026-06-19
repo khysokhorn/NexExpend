@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".NexExpendApplication"
@@ -16,13 +16,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.NexExpend">
 
+        <!-- Main app activity -->
         <activity
             android:name=".MainActivity"
-            android:excludeFromRecents="true"
             android:exported="true"
             android:launchMode="singleTask"
-            android:noHistory="true"
-            android:theme="@style/Theme.Transparent"
+            android:theme="@style/Theme.NexExpend"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -33,10 +32,48 @@
                 android:resource="@xml/shortcuts" />
         </activity>
 
+        <!-- Truly invisible trampoline: starts service and finishes instantly.
+             Uses Theme.Trampoline which completely suppresses entrance/exit animations.
+             Uses singleInstance and custom taskAffinity so it never pulls the main app's task to the foreground. -->
+        <activity
+            android:name=".QuickExpenseTrampolineActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:noHistory="true"
+            android:theme="@style/Theme.Trampoline"
+            android:taskAffinity="com.nextgen.expend.trampoline"
+            android:launchMode="singleInstance">
+            <intent-filter>
+                <action android:name="com.nextgen.expend.ACTION_QUICK_EXPENSE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- Overlay service: shows the popup on top of any app -->
         <service
             android:name=".QuickExpenseOverlayService"
-            android:exported="false"
-            tools:targetApi="26" />
+            android:exported="false" />
+
+        <!--
+            Quick Settings Tile — the CORRECT way to trigger the overlay while another app is open.
+
+            Unlike app shortcuts (which launch an Activity and always pause the foreground app),
+            TileService.onClick() runs inside a Service. No Activity is launched, so apps like
+            Facebook are never paused or sent to the home screen. The overlay appears directly
+            on top of them.
+
+            User setup: Pull down twice → tap edit (pencil) → drag "Add Expense" into active tiles.
+        -->
+        <service
+            android:name=".QuickExpenseTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_qs_add_expense"
+            android:label="@string/quick_expense_tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
     </application>
 
