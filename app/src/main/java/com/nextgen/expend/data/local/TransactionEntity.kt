@@ -15,6 +15,7 @@ data class TransactionEntity(
     val category: String,
     val dateLabel: String,
     val timeLabel: String,
+    val currency: String = "USD",
     val createdAt: Long = System.currentTimeMillis()
 )
 
@@ -25,7 +26,8 @@ fun Transaction.toEntity(): TransactionEntity = TransactionEntity(
     type = type.name,
     category = category.name,
     dateLabel = dateLabel,
-    timeLabel = timeLabel
+    timeLabel = timeLabel,
+    currency = currency
 )
 
 fun TransactionEntity.toDomain(): Transaction = Transaction(
@@ -35,5 +37,6 @@ fun TransactionEntity.toDomain(): Transaction = Transaction(
     type = TransactionType.valueOf(type),
     category = Category.valueOf(category),
     dateLabel = dateLabel,
-    timeLabel = timeLabel
+    timeLabel = timeLabel,
+    currency = currency
 )

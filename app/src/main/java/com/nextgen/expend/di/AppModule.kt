@@ -13,6 +13,9 @@ import org.koin.dsl.module
 val appModule = module {
     single {
         Room.databaseBuilder(androidContext(), AppDatabase::class.java, "nexexpend.db")
+            // No migration path exists yet for the version 1 -> 2 currency column;
+            // acceptable while the app is still pre-1.0 and only test data exists locally.
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
     single { get<AppDatabase>().transactionDao() }

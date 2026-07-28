@@ -56,7 +56,7 @@ class TransactionViewModel(
         }
     }
 
-    fun addExpense(amount: Double, category: Category, note: String) {
+    fun addExpense(amount: Double, category: Category, note: String, currency: String = "USD") {
         viewModelScope.launch {
             val dateFormat = SimpleDateFormat("MMM dd", Locale.US)
             val timeFormat = SimpleDateFormat("hh:mm a", Locale.US)
@@ -69,7 +69,8 @@ class TransactionViewModel(
                 type = TransactionType.EXPENSE,
                 category = category,
                 dateLabel = "Today", // Simple categorization for instant viewing
-                timeLabel = timeFormat.format(now)
+                timeLabel = timeFormat.format(now),
+                currency = currency
             )
             repository.addTransaction(newTx)
             generateSmartTip()
