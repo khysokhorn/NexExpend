@@ -23,6 +23,7 @@ fun AppNavHost(
     val transactions by viewModel.transactions.collectAsState()
     val smartTip by viewModel.smartTip.collectAsState()
     val llmStatus by viewModel.llmStatus.collectAsState()
+    val modelDownloadProgress by viewModel.modelDownloadProgress.collectAsState()
 
     val modelPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -39,8 +40,10 @@ fun AppNavHost(
                 transactions = transactions,
                 smartTip = smartTip,
                 llmStatus = llmStatus,
+                modelDownloadProgress = modelDownloadProgress,
                 onRefreshTip = { viewModel.generateSmartTip() },
                 onLoadModel = { modelPickerLauncher.launch(arrayOf("*/*")) },
+                onDownloadModel = { url -> viewModel.downloadModelFromUrl(url) },
                 onAddExpense = { navController.navigate(Routes.ADD_EXPENSE) },
                 onHistory    = { navController.navigate(Routes.TRANSACTION_HISTORY) },
                 onInsights   = { navController.navigate(Routes.INSIGHTS) },

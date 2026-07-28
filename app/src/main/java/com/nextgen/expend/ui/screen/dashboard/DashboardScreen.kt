@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.DirectionsCar
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.FitnessCenter
@@ -31,18 +32,24 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.ShoppingBag
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -74,14 +81,18 @@ fun DashboardScreen(
     transactions: List<Transaction>,
     smartTip: String,
     llmStatus: LocalLlmService.Status,
+    modelDownloadProgress: Float?,
     onRefreshTip: () -> Unit,
     onLoadModel: () -> Unit,
+    onDownloadModel: (String) -> Unit,
     onAddExpense: () -> Unit,
     onHistory: () -> Unit,
     onInsights: () -> Unit,
     onSearch: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
+    var showDownloadDialog by remember { mutableStateOf(false) }
+    var modelUrl by remember { mutableStateOf("") }
 
     val totalIncome = remember(transactions) {
         transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
@@ -414,32 +425,112 @@ fun DashboardScreen(
             }
 
             if (llmStatus == LocalLlmService.Status.ERROR) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.small)
-                        .clickable(onClick = onLoadModel)
-                        .padding(top = 10.dp, bottom = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Outlined.FileUpload,
-                        contentDescription = null,
-                        tint = scheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        "Load model from device",
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            color = scheme.primary,
-                            fontWeight = FontWeight.SemiBold
+                if (modelDownloadProgress != null) {
+                    Column(modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)) {
+                        Text(
+                            "Downloading model… ${(modelDownloadProgress * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                color = scheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         )
-                    )
+                        Spacer(Modifier.height(6.dp))
+                        LinearProgressIndicator(
+                            progress = { modelDownloadProgress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(MaterialTheme.shapes.extraSmall),
+                            color = scheme.primary,
+                            trackColor = scheme.surfaceVariant,
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.small)
+                            .clickable(onClick = onLoadModel)
+                            .padding(top = 10.dp, bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.FileUpload,
+                            contentDescription = null,
+                            tint = scheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            "Load model from device",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                color = scheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        )
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.small)
+                            .clickable { showDownloadDialog = true }
+                            .padding(top = 6.dp, bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.CloudDownload,
+                            contentDescription = null,
+                            tint = scheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            "Download model from URL",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                color = scheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        )
+                    }
                 }
             }
 
             Spacer(Modifier.height(16.dp))
         }
+    }
+
+    if (showDownloadDialog) {
+        AlertDialog(
+            onDismissRequest = { showDownloadDialog = false },
+            title = { Text("Download model") },
+            text = {
+                Column {
+                    Text(
+                        "Paste a direct .litertlm download link (e.g. a Hugging Face " +
+                            "\"resolve/main/...\" file link).",
+                        style = MaterialTheme.typography.bodyMedium.copy(color = scheme.onSurfaceVariant)
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = modelUrl,
+                        onValueChange = { modelUrl = it },
+                        placeholder = { Text("https://huggingface.co/.../resolve/main/model.litertlm") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = modelUrl.isNotBlank(),
+                    onClick = {
+                        onDownloadModel(modelUrl.trim())
+                        showDownloadDialog = false
+                    }
+                ) { Text("Download") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDownloadDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 }
