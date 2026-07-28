@@ -56,6 +56,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Restrict native libs (LiteRT) to arm64-v8a — covers virtually all real
+        // devices and keeps the debug APK small enough for Telegram's upload limit.
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     buildTypes {
