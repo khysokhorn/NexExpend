@@ -1,8 +1,45 @@
+import org.gradle.api.tasks.Copy
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.gms.google.services)
     alias(libs.plugins.ksp)
+}
+
+// The on-device LLM model (.litertlm) is too large for git (see .gitignore) and is
+// loaded from app assets at runtime by LocalLlmService. Rather than committing it,
+// drop the model file under a local `models/` directory (repo root, git-ignored) —
+// or point MODEL_DIR at another local path — and this task stages it into
+// src/main/assets before every build. If no model is found, the build still
+// succeeds; LocalLlmService falls back to regex-based parsing at runtime.
+val localModelDir = System.getenv("MODEL_DIR")
+    ?: (project.findProperty("modelDir") as String?)
+    ?: "${rootProject.rootDir}/models"
+
+tasks.register<Copy>("copyLocalModel") {
+    val modelDir = file(localModelDir)
+    val assetsDir = file("src/main/assets")
+
+    from(modelDir) { include("*.litertlm") }
+    into(assetsDir)
+
+    onlyIf {
+        val hasModel = modelDir.listFiles { f -> f.extension == "litertlm" }?.isNotEmpty() == true
+        if (!hasModel) {
+            logger.lifecycle(
+                "[copyLocalModel] No .litertlm file found in ${modelDir.path} — " +
+                    "skipping on-device model bundling; app will use fallback parsing."
+            )
+        }
+        hasModel
+    }
+
+    doFirst { assetsDir.mkdirs() }
+}
+
+tasks.named("preBuild") {
+    dependsOn("copyLocalModel")
 }
 
 android {
