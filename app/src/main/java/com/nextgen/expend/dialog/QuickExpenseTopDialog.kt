@@ -71,6 +71,7 @@ private val quickCategories = listOf(
  * @param initialAmount   Amount extracted by the LLM, or null if unknown.
  * @param initialCategory Category inferred by the LLM, or null if unknown.
  * @param initialNote     Remark / merchant name extracted by the LLM.
+ * @param initialCurrency Currency ("USD"/"KHR") detected from the notification, or null if unknown.
  * @param isFromNotification True when this popup was triggered by a bank notification.
  * @param onSave   Callback invoked when the user confirms the transaction.
  * @param onDismiss Callback invoked when the user dismisses the popup.
@@ -81,8 +82,9 @@ fun QuickExpenseTopPopup(
     initialAmount: Double? = null,
     initialCategory: Category? = null,
     initialNote: String = "",
+    initialCurrency: String? = null,
     isFromNotification: Boolean = false,
-    onSave: (amount: Double, category: Category, note: String) -> Unit,
+    onSave: (amount: Double, category: Category, note: String, currency: String) -> Unit,
     onDismiss: () -> Unit
 ) {
     // ---- State ----
@@ -95,6 +97,7 @@ fun QuickExpenseTopPopup(
         mutableStateOf(initialCategory ?: Category.DINING)
     }
     var note by remember(initialNote) { mutableStateOf(initialNote) }
+    var currency by remember(initialCurrency) { mutableStateOf(initialCurrency ?: "USD") }
     var visible by remember { mutableStateOf(false) }
 
     // Auto-expand category row if LLM couldn't determine a category
@@ -264,6 +267,7 @@ fun QuickExpenseTopPopup(
                     }
 
                     // Amount Text Input
+                    val currencySymbol = if (currency == "KHR") "៛" else "$"
                     OutlinedTextField(
                         value = amountStr,
                         onValueChange = { input ->
@@ -273,11 +277,25 @@ fun QuickExpenseTopPopup(
                         },
                         label = {
                             Text(
-                                text = if (isFromNotification && initialAmount == null) "Amount (⚠ Missing)" else "Amount ($)",
+                                text = if (isFromNotification && initialAmount == null) "Amount (⚠ Missing)" else "Amount ($currencySymbol)",
                                 style = TextStyle(
                                     fontSize = 11.sp,
                                     color = if (isFromNotification && initialAmount == null) AiAccent else TextSecondary
                                 )
+                            )
+                        },
+                        // Tap to switch between USD/KHR — reflects what the notification
+                        // detected by default, but stays user-correctable.
+                        leadingIcon = {
+                            Text(
+                                text = currencySymbol,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .clickable { currency = if (currency == "USD") "KHR" else "USD" }
+                                    .padding(4.dp),
+                                color = TextPrimary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
                             )
                         },
                         modifier = Modifier
@@ -324,7 +342,7 @@ fun QuickExpenseTopPopup(
                             onDone = {
                                 val amountVal = amountStr.toDoubleOrNull() ?: 0.0
                                 if (amountVal > 0.0) {
-                                    onSave(amountVal, selectedCategory, note)
+                                    onSave(amountVal, selectedCategory, note, currency)
                                 }
                             }
                         ),
@@ -350,7 +368,7 @@ fun QuickExpenseTopPopup(
                             )
                             .clickable(enabled = canSave) {
                                 val amountVal = amountStr.toDoubleOrNull() ?: 0.0
-                                onSave(amountVal, selectedCategory, note)
+                                onSave(amountVal, selectedCategory, note, currency)
                             },
                         contentAlignment = Alignment.Center
                     ) {

@@ -130,9 +130,10 @@ class QuickExpenseOverlayService : Service(), LifecycleOwner, SavedStateRegistry
                         initialAmount = prefilledAmount.value,
                         initialCategory = prefilledCategory.value,
                         initialNote = prefilledRemark.value,
+                        initialCurrency = prefilledCurrency.value,
                         isFromNotification = isFromNotification.value,
-                        onSave = { amount, category, note ->
-                            saveExpense(amount, category, note)
+                        onSave = { amount, category, note, currency ->
+                            saveExpense(amount, category, note, currency)
                             closeOverlay()
                         },
                         onDismiss = { closeOverlay() }
@@ -168,7 +169,7 @@ class QuickExpenseOverlayService : Service(), LifecycleOwner, SavedStateRegistry
         }
     }
 
-    private fun saveExpense(amount: Double, category: Category, note: String) {
+    private fun saveExpense(amount: Double, category: Category, note: String, currency: String) {
         serviceScope.launch {
             val timeFormat = SimpleDateFormat("hh:mm a", Locale.US)
             val now = Date()
@@ -180,10 +181,11 @@ class QuickExpenseOverlayService : Service(), LifecycleOwner, SavedStateRegistry
                 type = TransactionType.EXPENSE,
                 category = category,
                 dateLabel = "Today",
-                timeLabel = timeFormat.format(now)
+                timeLabel = timeFormat.format(now),
+                currency = currency
             )
             repository.addTransaction(transaction)
-            Log.d(TAG, "Saved expense: $amount ${category.label}")
+            Log.d(TAG, "Saved expense: $amount $currency ${category.label}")
         }
     }
 

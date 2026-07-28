@@ -50,7 +50,7 @@ private val displayCategories = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseScreen(
-    onBack: () -> Unit, onSaveExpense: (Double, Category, String) -> Unit
+    onBack: () -> Unit, onSaveExpense: (Double, Category, String, String) -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
     var selectedCategory by remember { mutableStateOf(Category.DINING) }
@@ -312,7 +312,7 @@ fun AddExpenseScreen(
                         onClick = {
                             val amountVal = amountStr.toDoubleOrNull() ?: 0.0
                             if (amountVal > 0.0) {
-                                onSaveExpense(amountVal, selectedCategory, note)
+                                onSaveExpense(amountVal, selectedCategory, note, currency.name)
                             }
                             onBack()
                         },

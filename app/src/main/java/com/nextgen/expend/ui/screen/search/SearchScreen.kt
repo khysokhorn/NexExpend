@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.nextgen.expend.data.model.Category
 import com.nextgen.expend.data.model.Transaction
 import com.nextgen.expend.data.model.TransactionType
+import com.nextgen.expend.data.model.formattedAmount
 
 private val filterCategories = listOf(null) + Category.entries
 
@@ -304,7 +305,7 @@ private fun SearchResultRow(
         val sign  = if (tx.type == TransactionType.INCOME) "+" else "-"
         val color = if (tx.type == TransactionType.INCOME) scheme.primary else scheme.onSurface
         Text(
-            "$sign$${"%.2f".format(tx.amount)}",
+            "$sign${tx.formattedAmount()}",
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.Bold,
                 color      = color

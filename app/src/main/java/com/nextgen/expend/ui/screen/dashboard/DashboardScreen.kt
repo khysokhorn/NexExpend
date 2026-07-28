@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nextgen.expend.data.model.Transaction
 import com.nextgen.expend.data.model.TransactionType
+import com.nextgen.expend.data.model.formattedAmount
 import com.nextgen.expend.network.localllm.LocalLlmService
 import com.nextgen.expend.ui.components.BottomNavBar
 import com.nextgen.expend.ui.components.NavTab
@@ -334,7 +335,7 @@ fun DashboardScreen(
                         val color =
                             if (tx.type == TransactionType.INCOME) scheme.primary else scheme.onSurface
                         Text(
-                            "$sign\$${"%.2f".format(tx.amount)}",
+                            "$sign${tx.formattedAmount()}",
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = color

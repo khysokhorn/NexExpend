@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nextgen.expend.data.model.Transaction
 import com.nextgen.expend.data.model.TransactionType
+import com.nextgen.expend.data.model.formattedAmount
 import com.nextgen.expend.ui.components.BottomNavBar
 import com.nextgen.expend.ui.components.NavTab
 
@@ -189,7 +190,7 @@ private fun TransactionRow(tx: Transaction, scheme: ColorScheme) {
         val sign  = if (tx.type == TransactionType.INCOME) "+" else "-"
         val color = if (tx.type == TransactionType.INCOME) scheme.primary else scheme.onSurface
         Text(
-            "$sign$${"%.2f".format(tx.amount)}",
+            "$sign${tx.formattedAmount()}",
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.Bold,
                 color      = color
