@@ -12,7 +12,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.compose.rememberNavController
 import com.nextgen.expend.navigation.AppNavHost
 import com.nextgen.expend.network.service.NotificationPermission
@@ -39,11 +47,28 @@ class MainActivity : ComponentActivity() {
         if (handleQuickExpenseIntent(intent)) {
             return
         }
-        val isPermissionGranted = NotificationPermission.isGranted(this)
 
         enableEdgeToEdge()
         setContent {
             val context = LocalContext.current
+            val lifecycleOwner = LocalLifecycleOwner.current
+            var isPermissionGranted by remember {
+                mutableStateOf(NotificationPermission.isGranted(this@MainActivity))
+            }
+
+            // Re-check whenever the user comes back (e.g. from the Settings screen
+            // they were sent to), so this dialog dismisses itself once granted
+            // instead of staying stuck open for the rest of the session.
+            DisposableEffect(lifecycleOwner) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_RESUME) {
+                        isPermissionGranted = NotificationPermission.isGranted(this@MainActivity)
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+            }
+
             if (!isPermissionGranted) {
                 AlertDialog(
                     onDismissRequest = {},

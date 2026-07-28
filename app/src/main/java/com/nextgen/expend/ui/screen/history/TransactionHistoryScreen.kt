@@ -56,8 +56,8 @@ fun TransactionHistoryScreen(
                     IconButton(onClick = onSearch) {
                         Icon(Icons.Outlined.Search, contentDescription = "Search")
                     }
-                    IconButton(onClick = {}) {
-                        Icon(Icons.Outlined.FilterList, contentDescription = "Filter")
+                    IconButton(onClick = onSearch) {
+                        Icon(Icons.Outlined.FilterList, contentDescription = "Filter by category")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -143,7 +143,6 @@ private fun TransactionRow(tx: Transaction, scheme: ColorScheme) {
     Row(
         modifier              = Modifier
             .fillMaxWidth()
-            .clickable {}
             .padding(vertical = 14.dp),
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
