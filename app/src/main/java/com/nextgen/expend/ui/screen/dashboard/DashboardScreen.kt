@@ -74,6 +74,7 @@ fun DashboardScreen(
     smartTip: String,
     llmStatus: LocalLlmService.Status,
     onRefreshTip: () -> Unit,
+    onLoadModel: () -> Unit,
     onAddExpense: () -> Unit,
     onHistory: () -> Unit,
     onInsights: () -> Unit,
@@ -404,6 +405,12 @@ fun DashboardScreen(
                         contentDescription = "Refresh",
                         tint = scheme.onSurfaceVariant
                     )
+                }
+            }
+
+            if (llmStatus == LocalLlmService.Status.ERROR) {
+                TextButton(onClick = onLoadModel) {
+                    Text("Load model from device")
                 }
             }
 
