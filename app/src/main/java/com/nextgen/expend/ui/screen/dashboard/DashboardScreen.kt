@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.DirectionsCar
@@ -51,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nextgen.expend.data.model.Transaction
 import com.nextgen.expend.data.model.TransactionType
+import com.nextgen.expend.network.localllm.LocalLlmService
 import com.nextgen.expend.ui.components.BottomNavBar
 import com.nextgen.expend.ui.components.NavTab
 import java.util.Locale
@@ -58,21 +60,24 @@ import java.util.Locale
 private data class CategoryItem(val label: String, val icon: ImageVector)
 
 private val categories = listOf(
-    CategoryItem("Food",      Icons.Outlined.Restaurant),
+    CategoryItem("Food", Icons.Outlined.Restaurant),
     CategoryItem("Transport", Icons.Outlined.DirectionsCar),
-    CategoryItem("Bills",     Icons.Outlined.ReceiptLong),
-    CategoryItem("Shopping",  Icons.Outlined.ShoppingBag),
-    CategoryItem("Health",    Icons.Outlined.FitnessCenter),
+    CategoryItem("Bills", Icons.AutoMirrored.Outlined.ReceiptLong),
+    CategoryItem("Shopping", Icons.Outlined.ShoppingBag),
+    CategoryItem("Health", Icons.Outlined.FitnessCenter),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     transactions: List<Transaction>,
+    smartTip: String,
+    llmStatus: LocalLlmService.Status,
+    onRefreshTip: () -> Unit,
     onAddExpense: () -> Unit,
-    onHistory:    () -> Unit,
-    onInsights:   () -> Unit,
-    onSearch:     () -> Unit,
+    onHistory: () -> Unit,
+    onInsights: () -> Unit,
+    onSearch: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
 
@@ -82,15 +87,13 @@ fun DashboardScreen(
     val totalSpent = remember(transactions) {
         transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
     }
-    val totalBalance = remember(totalIncome, totalSpent) {
-        10000.0 + totalIncome - totalSpent
-    }
+    val totalBalance = remember(totalIncome, totalSpent) { totalIncome - totalSpent }
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text  = "Wallet",
+                        text = "Wallet",
                         style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold)
                     )
                 },
@@ -103,18 +106,18 @@ fun DashboardScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor         = scheme.surface,
-                    titleContentColor      = scheme.primary,
+                    containerColor = scheme.surface,
+                    titleContentColor = scheme.primary,
                     actionIconContentColor = scheme.primary
                 )
             )
         },
         bottomBar = {
             BottomNavBar(
-                selected   = NavTab.HOME,
-                onHome     = {},
-                onHistory  = onHistory,
-                onAdd      = onAddExpense,
+                selected = NavTab.HOME,
+                onHome = {},
+                onHistory = onHistory,
+                onAdd = onAddExpense,
                 onInsights = onInsights
             )
         },
@@ -139,34 +142,34 @@ fun DashboardScreen(
             ) {
                 Column {
                     Row(
-                        modifier              = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment     = Alignment.Top
+                        verticalAlignment = Alignment.Top
                     ) {
                         Column {
                             Text(
-                                text  = "TOTAL BALANCE",
+                                text = "TOTAL BALANCE",
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    color         = scheme.onPrimary.copy(alpha = 0.7f),
+                                    color = scheme.onPrimary.copy(alpha = 0.7f),
                                     letterSpacing = 1.5.sp
                                 )
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                text  = "$%,.2f".format(Locale.US, totalBalance),
+                                text = "$%,.2f".format(Locale.US, totalBalance),
                                 style = MaterialTheme.typography.displayLarge.copy(
-                                    color         = scheme.onPrimary,
-                                    fontSize      = 36.sp,
-                                    fontWeight    = FontWeight.Bold,
+                                    color = scheme.onPrimary,
+                                    fontSize = 36.sp,
+                                    fontWeight = FontWeight.Bold,
                                     letterSpacing = (-1).sp
                                 )
                             )
                         }
                         Icon(
-                            imageVector        = Icons.Outlined.AccountBalanceWallet,
+                            imageVector = Icons.Outlined.AccountBalanceWallet,
                             contentDescription = null,
-                            tint               = scheme.onPrimary.copy(alpha = 0.2f),
-                            modifier           = Modifier.size(40.dp)
+                            tint = scheme.onPrimary.copy(alpha = 0.2f),
+                            modifier = Modifier.size(40.dp)
                         )
                     }
                     Spacer(Modifier.height(24.dp))
@@ -175,14 +178,14 @@ fun DashboardScreen(
                             Text(
                                 "MONTHLY INCOME",
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    color         = scheme.onPrimary.copy(alpha = 0.6f),
+                                    color = scheme.onPrimary.copy(alpha = 0.6f),
                                     letterSpacing = 1.sp
                                 )
                             )
                             Text(
                                 "+$%,.2f".format(Locale.US, totalIncome),
                                 style = MaterialTheme.typography.headlineSmall.copy(
-                                    color      = scheme.onPrimary,
+                                    color = scheme.onPrimary,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             )
@@ -191,14 +194,14 @@ fun DashboardScreen(
                             Text(
                                 "MONTHLY SPENT",
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    color         = scheme.onPrimary.copy(alpha = 0.6f),
+                                    color = scheme.onPrimary.copy(alpha = 0.6f),
                                     letterSpacing = 1.sp
                                 )
                             )
                             Text(
                                 "-$%,.2f".format(Locale.US, totalSpent),
                                 style = MaterialTheme.typography.headlineSmall.copy(
-                                    color      = scheme.onPrimary,
+                                    color = scheme.onPrimary,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             )
@@ -211,9 +214,9 @@ fun DashboardScreen(
 
             // ── Categories ──────────────────────────────────────────────────
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Categories", style = MaterialTheme.typography.headlineSmall)
                 TextButton(onClick = {}) {
@@ -226,12 +229,12 @@ fun DashboardScreen(
             Spacer(Modifier.height(12.dp))
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding        = PaddingValues(horizontal = 0.dp)
+                contentPadding = PaddingValues(horizontal = 0.dp)
             ) {
                 items(categories) { cat ->
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier            = Modifier.width(64.dp)
+                        modifier = Modifier.width(64.dp)
                     ) {
                         Box(
                             modifier = Modifier
@@ -245,14 +248,14 @@ fun DashboardScreen(
                             Icon(
                                 cat.icon,
                                 contentDescription = cat.label,
-                                modifier           = Modifier.size(24.dp),
-                                tint               = scheme.primary
+                                modifier = Modifier.size(24.dp),
+                                tint = scheme.primary
                             )
                         }
                         Spacer(Modifier.height(6.dp))
                         Text(
                             cat.label,
-                            style    = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.labelMedium,
                             maxLines = 1
                         )
                     }
@@ -263,9 +266,9 @@ fun DashboardScreen(
 
             // ── Recent Transactions ──────────────────────────────────────────
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Recent Transactions", style = MaterialTheme.typography.headlineSmall)
                 TextButton(onClick = onHistory) {
@@ -278,19 +281,19 @@ fun DashboardScreen(
             Spacer(Modifier.height(4.dp))
             transactions.take(3).forEach { tx ->
                 HorizontalDivider(
-                    color     = scheme.outlineVariant.copy(alpha = 0.5f),
+                    color = scheme.outlineVariant.copy(alpha = 0.5f),
                     thickness = 0.5.dp
                 )
                 Row(
-                    modifier              = Modifier
+                    modifier = Modifier
                         .fillMaxWidth()
                         .clickable {}
                         .padding(vertical = 14.dp),
-                    verticalAlignment     = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(
-                        verticalAlignment     = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Box(
@@ -303,7 +306,7 @@ fun DashboardScreen(
                             Icon(
                                 tx.category.icon,
                                 contentDescription = null,
-                                modifier           = Modifier.size(20.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                         Column {
@@ -322,13 +325,14 @@ fun DashboardScreen(
                         }
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        val sign  = if (tx.type == TransactionType.INCOME) "+" else "-"
-                        val color = if (tx.type == TransactionType.INCOME) scheme.primary else scheme.onSurface
+                        val sign = if (tx.type == TransactionType.INCOME) "+" else "-"
+                        val color =
+                            if (tx.type == TransactionType.INCOME) scheme.primary else scheme.onSurface
                         Text(
                             "$sign\$${"%.2f".format(tx.amount)}",
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontWeight = FontWeight.Bold,
-                                color      = color
+                                color = color
                             )
                         )
                         Text(
@@ -341,54 +345,66 @@ fun DashboardScreen(
                 }
             }
             HorizontalDivider(
-                color     = scheme.outlineVariant.copy(alpha = 0.5f),
+                color = scheme.outlineVariant.copy(alpha = 0.5f),
                 thickness = 0.5.dp
             )
 
             Spacer(Modifier.height(40.dp))
 
             // ── Smart Tip ─────────────────────────────────────────────────────
+            val tipTitle = when (llmStatus) {
+                LocalLlmService.Status.COPYING_MODEL -> "Smart Tip (Loading Local Model...)"
+                LocalLlmService.Status.INITIALIZING -> "Smart Tip (Initializing Local AI...)"
+                LocalLlmService.Status.INFERENCE -> "Smart Tip (Local AI Thinking...)"
+                LocalLlmService.Status.ERROR -> "Smart Tip (AI Offline)"
+                else -> "Smart Tip (On-Device AI)"
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.large)
                     .border(1.dp, scheme.outlineVariant, MaterialTheme.shapes.large)
                     .background(scheme.surfaceVariant.copy(alpha = 0.4f))
-                    .clickable {}
+                    .clickable(enabled = llmStatus == LocalLlmService.Status.READY || llmStatus == LocalLlmService.Status.ERROR) {
+                        onRefreshTip()
+                    }
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment     = Alignment.CenterVertically,
-                    modifier              = Modifier.weight(1f)
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
                 ) {
                     Icon(
                         Icons.Outlined.Lightbulb,
                         contentDescription = null,
-                        tint               = scheme.primary
+                        tint = if (llmStatus == LocalLlmService.Status.ERROR) scheme.error else scheme.primary
                     )
                     Column {
                         Text(
-                            "Smart Tip",
+                            tipTitle,
                             style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = if (llmStatus == LocalLlmService.Status.ERROR) scheme.error else scheme.onSurface
                             )
                         )
                         Text(
-                            "You spent 15% less on food this week.",
+                            smartTip,
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = scheme.onSurfaceVariant
                             )
                         )
                     }
                 }
-                Icon(
-                    Icons.Outlined.ChevronRight,
-                    contentDescription = null,
-                    tint               = scheme.onSurfaceVariant
-                )
+                if (llmStatus == LocalLlmService.Status.READY || llmStatus == LocalLlmService.Status.ERROR) {
+                    Icon(
+                        Icons.Outlined.ChevronRight,
+                        contentDescription = "Refresh",
+                        tint = scheme.onSurfaceVariant
+                    )
+                }
             }
 
             Spacer(Modifier.height(16.dp))

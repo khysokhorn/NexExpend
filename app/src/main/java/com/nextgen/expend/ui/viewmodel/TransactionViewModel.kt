@@ -6,8 +6,11 @@ import com.nextgen.expend.data.TransactionRepository
 import com.nextgen.expend.data.model.Category
 import com.nextgen.expend.data.model.Transaction
 import com.nextgen.expend.data.model.TransactionType
+import com.nextgen.expend.network.localllm.LocalLlmService
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -15,7 +18,8 @@ import java.util.Date
 import java.util.Locale
 
 class TransactionViewModel(
-    private val repository: TransactionRepository
+    private val repository: TransactionRepository,
+    private val localLlmService: LocalLlmService
 ) : ViewModel() {
 
     val transactions: StateFlow<List<Transaction>> = repository.getTransactionsFlow()
@@ -24,6 +28,25 @@ class TransactionViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    private val _smartTip = MutableStateFlow("Preparing Local AI...")
+    val smartTip: StateFlow<String> = _smartTip.asStateFlow()
+
+    val llmStatus: StateFlow<LocalLlmService.Status> = localLlmService.status
+
+    init {
+        viewModelScope.launch {
+            localLlmService.initialize()
+            generateSmartTip()
+        }
+    }
+
+    fun generateSmartTip() {
+        viewModelScope.launch {
+            val tip = localLlmService.generateFinancialTip(transactions.value)
+            _smartTip.value = tip
+        }
+    }
 
     fun addExpense(amount: Double, category: Category, note: String) {
         viewModelScope.launch {
@@ -41,6 +64,12 @@ class TransactionViewModel(
                 timeLabel = timeFormat.format(now)
             )
             repository.addTransaction(newTx)
+            generateSmartTip()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        localLlmService.release()
     }
 }

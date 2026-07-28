@@ -1,21 +1,37 @@
 package com.nextgen.expend.ui.screen.addexpense
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.rememberTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
+import androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nextgen.expend.data.model.Category
+import java.text.DecimalFormat
 
 private val displayCategories = listOf(
     Category.DINING,
@@ -37,7 +53,35 @@ fun AddExpenseScreen(
     var selectedCategory by remember { mutableStateOf(Category.DINING) }
     var amountStr by remember { mutableStateOf("0") }
     var note by remember { mutableStateOf("") }
-    var currency by remember { mutableStateOf("USD") }
+    var currency by remember { mutableStateOf(Currency.KHR) }
+    val infiniteTransition = rememberInfiniteTransition(label = "cursor")
+    val cursorAlpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 1000,
+                easing = LinearEasing
+            ),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "cursorAlpha"
+    )
+
+    fun formatAmount(
+        value: String,
+        currency: Currency
+    ): String {
+        val number = value.toBigDecimalOrNull() ?: return value
+
+        return when (currency) {
+            Currency.USD ->
+                DecimalFormat("#,##0.00").format(number)
+
+            Currency.KHR ->
+                DecimalFormat("#,##0").format(number)
+        }
+    }
 
     // Banking-style keypad digit handler
     fun onKey(key: String) {
@@ -60,12 +104,14 @@ fun AddExpenseScreen(
                     )
                 }, navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                     }
-                }, colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                }, colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = scheme.background,
+                    scrolledContainerColor = Color.Unspecified,
+                    navigationIconContentColor = scheme.onSurface,
                     titleContentColor = scheme.onSurface,
-                    navigationIconContentColor = scheme.onSurface
+                    actionIconContentColor = Color.Unspecified
                 )
             )
         }) { innerPadding ->
@@ -83,70 +129,46 @@ fun AddExpenseScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 32.dp),
+                        .padding(vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         // Clickable Currency Selector (USD/KHR Switch)
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(scheme.primary)
-                                .clickable { currency = if (currency == "USD") "KHR" else "USD" }
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
-                            contentAlignment = Alignment.Center) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    if (currency == "USD") "$" else "៛",
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold, color = scheme.onPrimary
-                                    )
-                                )
-                                Text(
-                                    currency, style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = scheme.onPrimary.copy(alpha = 0.8f)
-                                    )
-                                )
-                                Icon(
-                                    imageVector = Icons.Outlined.KeyboardArrowDown,
-                                    contentDescription = "Switch currency",
-                                    tint = scheme.onPrimary,
-                                    modifier = Modifier.size(16.dp)
-                                )
+                        CurrencySelector(
+                            modifier = Modifier.width(240.dp),
+                            selected = currency,
+                            onSelected = {
+                                currency = it
                             }
-                        }
-                        Spacer(Modifier.width(12.dp))
+                        )
+                        Spacer(Modifier.height(32.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                amountStr, style = MaterialTheme.typography.displayLarge.copy(
+                                formatAmount(amountStr, currency = currency),
+                                style = MaterialTheme.typography.displayLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = scheme.primary,
                                     letterSpacing = (-1.5).sp
                                 )
                             )
-                            // Cursor |
                             Text(
                                 "|", style = MaterialTheme.typography.displayLarge.copy(
                                     fontWeight = FontWeight.Light,
                                     color = scheme.primary.copy(alpha = 0.5f)
-                                ), modifier = Modifier.padding(start = 2.dp)
+                                ), modifier = Modifier
+                                    .padding(start = 2.dp)
+                                    .alpha(cursorAlpha)
                             )
                         }
                     }
                 }
-
                 // ── Category Grid ───────────────────────────────────────────
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -379,6 +401,94 @@ fun AddExpenseScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+enum class Currency {
+    KHR, USD
+}
+
+@Composable
+fun CurrencySelector(
+    modifier: Modifier = Modifier,
+    selected: Currency,
+    onSelected: (Currency) -> Unit
+) {
+    val items = Currency.entries
+
+    BoxWithConstraints(
+        modifier = modifier
+            .wrapContentWidth()
+            .height(40.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color(0xFFF3F4F6))
+            .padding(3.dp)
+    ) {
+        val itemWidth = maxWidth / items.size
+
+        val offset by animateDpAsState(
+            targetValue = itemWidth * items.indexOf(selected),
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMediumLow
+            ),
+            label = ""
+        )
+
+        Card(
+            modifier = Modifier
+                .offset(x = offset)
+                .width(itemWidth)
+                .fillMaxHeight(),
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 5.dp
+            ),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
+        ) {}
+
+        Row(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items.forEach { currency ->
+
+                val textColor by animateColorAsState(
+                    if (currency == selected)
+                        Color.White
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                    label = ""
+                )
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable(
+                            indication = ripple(
+                                bounded = true,
+                                radius = 24.dp
+                            ),
+                            interactionSource = remember {
+                                MutableInteractionSource()
+                            }
+                        ) {
+                            onSelected(currency)
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = currency.name,
+                        color = textColor,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }

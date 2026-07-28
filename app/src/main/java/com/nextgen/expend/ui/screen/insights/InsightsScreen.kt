@@ -104,9 +104,9 @@ fun InsightsScreen(
     }
 
     val totalSpend = when (period) {
-        Period.WEEKLY -> "\$1,366.49"
-        Period.MONTHLY -> "\$4,285.50"
-        Period.YEARLY -> "\$42,860.00"
+        Period.WEEKLY -> $$"$0"
+        Period.MONTHLY -> $$"$0"
+        Period.YEARLY -> $$"$0"
     }
 
     // Vico column layer built with rememberLineComponent (correct 2.x API)

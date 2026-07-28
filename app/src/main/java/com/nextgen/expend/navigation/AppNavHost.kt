@@ -19,6 +19,8 @@ fun AppNavHost(
     viewModel: TransactionViewModel
 ) {
     val transactions by viewModel.transactions.collectAsState()
+    val smartTip by viewModel.smartTip.collectAsState()
+    val llmStatus by viewModel.llmStatus.collectAsState()
 
     NavHost(
         navController    = navController,
@@ -27,6 +29,9 @@ fun AppNavHost(
         composable(Routes.DASHBOARD) {
             DashboardScreen(
                 transactions = transactions,
+                smartTip = smartTip,
+                llmStatus = llmStatus,
+                onRefreshTip = { viewModel.generateSmartTip() },
                 onAddExpense = { navController.navigate(Routes.ADD_EXPENSE) },
                 onHistory    = { navController.navigate(Routes.TRANSACTION_HISTORY) },
                 onInsights   = { navController.navigate(Routes.INSIGHTS) },

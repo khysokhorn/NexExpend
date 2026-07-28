@@ -9,8 +9,13 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
 import com.nextgen.expend.navigation.AppNavHost
+import com.nextgen.expend.network.service.NotificationPermission
 import com.nextgen.expend.ui.theme.NexExpendTheme
 import com.nextgen.expend.ui.viewmodel.TransactionViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -34,9 +39,40 @@ class MainActivity : ComponentActivity() {
         if (handleQuickExpenseIntent(intent)) {
             return
         }
+        val isPermissionGranted = NotificationPermission.isGranted(this)
 
         enableEdgeToEdge()
         setContent {
+            val context = LocalContext.current
+            if (!isPermissionGranted) {
+                AlertDialog(
+                    onDismissRequest = {},
+                    title = {
+                        Text("Notification Access")
+                    },
+                    text = {
+                        Text(
+                            "Enable notification access so the app can detect payment notifications from your banking apps."
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                NotificationPermission.request(context)
+                            }
+                        ) {
+                            Text("Open Settings")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { }
+                        ) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
             NexExpendTheme {
                 val navController = rememberNavController()
                 AppNavHost(navController = navController, viewModel = transactionViewModel)
@@ -52,16 +88,20 @@ class MainActivity : ComponentActivity() {
 
     private fun handleQuickExpenseIntent(intent: Intent?): Boolean {
         val action = intent?.action
-        
+
         if (action == "com.nextgen.expend.ACTION_QUICK_EXPENSE" || action == Intent.ACTION_VIEW) {
             Log.d("QuickExpense", "Redirecting to overlay service from MainActivity")
-            
+
             // Check overlay permission first to prevent WindowManager$BadTokenException crash
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-                Log.d("QuickExpense", "Overlay permission not granted. Launching trampoline for permission request.")
-                val trampolineIntent = Intent(this, QuickExpenseTrampolineActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
+                Log.d(
+                    "QuickExpense",
+                    "Overlay permission not granted. Launching trampoline for permission request."
+                )
+                val trampolineIntent =
+                    Intent(this, QuickExpenseTrampolineActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
                 startActivity(trampolineIntent)
                 finish()
                 return true
@@ -77,7 +117,11 @@ class MainActivity : ComponentActivity() {
                 finishAndRemoveTask()
                 return true
             } catch (e: Exception) {
-                Log.e("QuickExpense", "Failed to start overlay service from MainActivity redirection", e)
+                Log.e(
+                    "QuickExpense",
+                    "Failed to start overlay service from MainActivity redirection",
+                    e
+                )
                 Toast.makeText(this, "Unable to start quick expense", Toast.LENGTH_SHORT).show()
             }
         }

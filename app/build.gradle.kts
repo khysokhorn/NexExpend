@@ -34,6 +34,9 @@ android {
     buildFeatures {
         compose = true
     }
+    aaptOptions {
+        noCompress("litertlm")
+    }
 }
 
 dependencies {
@@ -53,6 +56,8 @@ dependencies {
     implementation(libs.base.ui)
     implementation(libs.base.navigation)
     implementation(libs.base.database)
+    // LiteRT LLM – use litertlm-android (0.14.0+) only; do NOT add libs.litertlm (alpha05) as it causes duplicate class conflicts
+    implementation("com.google.ai.edge.litertlm:litertlm-android:latest.release")
 
     // Vico Charts – banking-grade chart library for Compose
     implementation(libs.vico.compose)
@@ -70,5 +75,4 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.gson)
     implementation(libs.koin.android)
-
 }

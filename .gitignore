@@ -14,3 +14,7 @@
 .cxx
 local.properties
 gradle/wrapper/gradle-wrapper.jar
+
+# Local LLM model files (too large for git)
+/app/src/main/assets/
+/models/

@@ -33,11 +33,14 @@ fun BottomNavBar(
         containerColor = scheme.surface,
         tonalElevation = 0.dp,
     ) {
+
         NavigationBarItem(
             selected = selected == NavTab.HOME,
             onClick  = onHome,
             icon     = {
                 Icon(
+
+
                     if (selected == NavTab.HOME) Icons.Filled.Home else Icons.Outlined.Home,
                     contentDescription = "Home",
                     modifier = Modifier.size(26.dp)

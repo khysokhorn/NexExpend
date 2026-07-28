@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.*
@@ -39,12 +40,12 @@ import com.nextgen.expend.data.model.Category
 
 // --- Ultra-premium compact color tokens ---
 private val GlassBg = Color(0xE60F101A) // Semi-transparent ultra dark
-private val AccentCyan = Color(0xFF00E5CC)
-private val AccentTeal = Color(0xFF00B4D8)
+private val AccentCyan = Color.Black
 private val TextPrimary = Color(0xFFF0F0F5)
 private val TextSecondary = Color(0xFFA0A0B8)
 private val BorderColor = Color(0xFF2E2F4A)
-private val BorderFocused = Color(0xFF00E5CC)
+private val BorderFocused = Color.White
+private val AiAccent = Color(0xFF7B68EE) // Soft purple to signal AI-generated data
 
 private val quickCategories = listOf(
     Category.DINING,
@@ -57,24 +58,69 @@ private val quickCategories = listOf(
     Category.OTHER
 )
 
+/**
+ * Bottom-sheet style overlay popup for quick expense entry.
+ *
+ * When [isFromNotification] is true, the popup is operating in **AI Preview mode**:
+ * - The header shows a purple "Transaction Preview · AI" label.
+ * - Fields pre-filled from the LLM are shown with a subtle AI badge.
+ * - The category selector expands automatically if [initialCategory] is null or OTHER.
+ * - Focus is set to the Amount field when [initialAmount] is null, otherwise to Remark
+ *   when [initialNote] is blank.
+ *
+ * @param initialAmount   Amount extracted by the LLM, or null if unknown.
+ * @param initialCategory Category inferred by the LLM, or null if unknown.
+ * @param initialNote     Remark / merchant name extracted by the LLM.
+ * @param isFromNotification True when this popup was triggered by a bank notification.
+ * @param onSave   Callback invoked when the user confirms the transaction.
+ * @param onDismiss Callback invoked when the user dismisses the popup.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickExpenseTopPopup(
+    initialAmount: Double? = null,
+    initialCategory: Category? = null,
+    initialNote: String = "",
+    isFromNotification: Boolean = false,
     onSave: (amount: Double, category: Category, note: String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var amountStr by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(Category.DINING) }
-    var note by remember { mutableStateOf("") }
+    // ---- State ----
+    var amountStr by remember(initialAmount) {
+        mutableStateOf(initialAmount?.let {
+            if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString()
+        } ?: "")
+    }
+    var selectedCategory by remember(initialCategory) {
+        mutableStateOf(initialCategory ?: Category.DINING)
+    }
+    var note by remember(initialNote) { mutableStateOf(initialNote) }
     var visible by remember { mutableStateOf(false) }
-    var showCategorySelector by remember { mutableStateOf(false) }
+
+    // Auto-expand category row if LLM couldn't determine a category
+    val categoryMissing = initialCategory == null || initialCategory == Category.OTHER
+    var showCategorySelector by remember(initialCategory) {
+        mutableStateOf(isFromNotification && categoryMissing)
+    }
 
     val amountFocusRequester = remember { FocusRequester() }
+    val remarkFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         visible = true
-        // Auto-request focus for amount input to trigger system keyboard
-        amountFocusRequester.requestFocus()
+    }
+
+    // Request focus on the appropriate field based on what data is missing
+    LaunchedEffect(isFromNotification, initialAmount, initialNote) {
+        if (isFromNotification) {
+            when {
+                initialAmount == null -> amountFocusRequester.requestFocus()
+                initialNote.isBlank() -> remarkFocusRequester.requestFocus()
+                else -> amountFocusRequester.requestFocus()
+            }
+        } else {
+            amountFocusRequester.requestFocus()
+        }
     }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -105,9 +151,13 @@ fun QuickExpenseTopPopup(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .border(1.dp, BorderColor, RoundedCornerShape(24.dp)),
+                .border(
+                    width = 1.dp,
+                    color = if (isFromNotification) AiAccent.copy(alpha = 0.5f) else BorderColor,
+                    shape = RoundedCornerShape(24.dp)
+                ),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = GlassBg),
+            colors = CardDefaults.cardColors(containerColor = Color.Black),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
@@ -117,27 +167,45 @@ fun QuickExpenseTopPopup(
                     .navigationBarsPadding()
                     .imePadding()
             ) {
-                // Header Row
+                // ---- Header Row ----
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(AccentCyan)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = "Quick Expense",
-                            color = TextPrimary,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.2.sp
-                        )
+                        if (isFromNotification) {
+                            // AI Preview indicator
+                            Icon(
+                                imageVector = Icons.Outlined.AutoAwesome,
+                                contentDescription = "AI Preview",
+                                tint = AiAccent,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = "Transaction Preview · AI",
+                                color = AiAccent,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 0.2.sp
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "Quick Expense",
+                                color = TextPrimary,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 0.2.sp
+                            )
+                        }
                     }
 
                     IconButton(
@@ -153,9 +221,21 @@ fun QuickExpenseTopPopup(
                     }
                 }
 
+                // AI hint banner — tells user to verify the parsed data
+                if (isFromNotification) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "Review and confirm the details below before saving.",
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Normal,
+                        letterSpacing = 0.1.sp
+                    )
+                }
+
                 Spacer(Modifier.height(12.dp))
 
-                // Input Controls Row
+                // ---- Input Controls Row ----
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -167,7 +247,11 @@ fun QuickExpenseTopPopup(
                             .size(48.dp)
                             .clip(CircleShape)
                             .background(GlassBg.copy(alpha = 0.12f))
-                            .border(1.5.dp, Color.White , CircleShape)
+                            .border(
+                                width = 1.5.dp,
+                                color = if (categoryMissing && isFromNotification) AiAccent else Color.White,
+                                shape = CircleShape
+                            )
                             .clickable { showCategorySelector = !showCategorySelector },
                         contentAlignment = Alignment.Center
                     ) {
@@ -179,16 +263,23 @@ fun QuickExpenseTopPopup(
                         )
                     }
 
-                    // Amount Text Input (Using system numeric keyboard)
+                    // Amount Text Input
                     OutlinedTextField(
                         value = amountStr,
                         onValueChange = { input ->
-                            // Numeric validation
                             if (input.isEmpty() || input.toDoubleOrNull() != null) {
                                 amountStr = input
                             }
                         },
-                        label = { Text("Amount ($)", style = TextStyle(fontSize = 11.sp)) },
+                        label = {
+                            Text(
+                                text = if (isFromNotification && initialAmount == null) "Amount (⚠ Missing)" else "Amount ($)",
+                                style = TextStyle(
+                                    fontSize = 11.sp,
+                                    color = if (isFromNotification && initialAmount == null) AiAccent else TextSecondary
+                                )
+                            )
+                        },
                         modifier = Modifier
                             .weight(1.2f)
                             .focusRequester(amountFocusRequester),
@@ -206,12 +297,22 @@ fun QuickExpenseTopPopup(
                         )
                     )
 
-                    // Note Text Input
+                    // Note / Remark Text Input
                     OutlinedTextField(
                         value = note,
                         onValueChange = { note = it },
-                        label = { Text("Remark", style = TextStyle(fontSize = 11.sp)) },
-                        modifier = Modifier.weight(1.5f),
+                        label = {
+                            Text(
+                                text = if (isFromNotification && initialNote.isBlank()) "Remark (⚠ Missing)" else "Remark",
+                                style = TextStyle(
+                                    fontSize = 11.sp,
+                                    color = if (isFromNotification && initialNote.isBlank()) AiAccent else TextSecondary
+                                )
+                            )
+                        },
+                        modifier = Modifier
+                            .weight(1.5f)
+                            .focusRequester(remarkFocusRequester),
                         shape = RoundedCornerShape(12.dp),
                         colors = textFieldColors,
                         singleLine = true,
@@ -235,20 +336,19 @@ fun QuickExpenseTopPopup(
                     )
 
                     // Quick Save FAB style button
+                    val canSave = amountStr.toDoubleOrNull()?.let { it > 0.0 } == true
                     Box(
                         modifier = Modifier
                             .size(48.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(
-                                if (amountStr.toDoubleOrNull() != null && amountStr.toDoubleOrNull()!! > 0.0) {
-                                    Brush.horizontalGradient(listOf(AccentCyan, AccentTeal))
+                                if (canSave) {
+                                    Brush.horizontalGradient(listOf(Color.Black, Color.White))
                                 } else {
                                     Brush.linearGradient(listOf(BorderColor, BorderColor))
                                 }
                             )
-                            .clickable(
-                                enabled = amountStr.toDoubleOrNull() != null && amountStr.toDoubleOrNull()!! > 0.0
-                            ) {
+                            .clickable(enabled = canSave) {
                                 val amountVal = amountStr.toDoubleOrNull() ?: 0.0
                                 onSave(amountVal, selectedCategory, note)
                             },
@@ -257,17 +357,26 @@ fun QuickExpenseTopPopup(
                         Icon(
                             Icons.Outlined.Check,
                             contentDescription = "Save",
-                            tint = if (amountStr.toDoubleOrNull() != null && amountStr.toDoubleOrNull()!! > 0.0) GlassBg else TextSecondary,
+                            tint = if (canSave) GlassBg else TextSecondary,
                             modifier = Modifier.size(24.dp)
                         )
                     }
                 }
 
-                // Smoothly animated Category selector drawer/row
+                // ---- Category selector drawer/row ----
                 AnimatedVisibility(visible = showCategorySelector) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Spacer(Modifier.height(12.dp))
-                        HorizontalDivider(color = BorderColor, thickness = 0.5.dp)
+                        HorizontalDivider(color = Color.White, thickness = 0.5.dp)
+                        if (isFromNotification && categoryMissing) {
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                text = "AI couldn't determine the category — please select one:",
+                                color = AiAccent,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                         Spacer(Modifier.height(8.dp))
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -275,16 +384,17 @@ fun QuickExpenseTopPopup(
                         ) {
                             items(quickCategories) { cat ->
                                 val isSelected = cat == selectedCategory
+                                val selectedColor = Color.White
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(12.dp))
                                         .background(
-                                            if (isSelected) AccentCyan.copy(alpha = 0.15f)
+                                            if (isSelected) selectedColor.copy(alpha = 0.15f)
                                             else Color.Transparent
                                         )
                                         .border(
                                             1.dp,
-                                            if (isSelected) AccentCyan else BorderColor,
+                                            if (isSelected) selectedColor else BorderColor,
                                             RoundedCornerShape(12.dp)
                                         )
                                         .clickable {
@@ -301,12 +411,12 @@ fun QuickExpenseTopPopup(
                                         Icon(
                                             cat.icon,
                                             contentDescription = cat.label,
-                                            tint = if (isSelected) AccentCyan else TextSecondary,
+                                            tint = if (isSelected) selectedColor else TextSecondary,
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Text(
                                             text = cat.label,
-                                            color = if (isSelected) AccentCyan else TextSecondary,
+                                            color = if (isSelected) selectedColor else TextSecondary,
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Medium
                                         )

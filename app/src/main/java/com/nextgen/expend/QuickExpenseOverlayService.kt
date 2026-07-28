@@ -9,6 +9,8 @@ import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -40,6 +42,9 @@ import java.util.Locale
 /**
  * Regular background service that displays the floating Quick Expense popup overlay.
  *
+ * When launched via [ACTION_SHOW_NOTIFICATION_PREVIEW] the overlay is pre-filled
+ * with LLM-extracted payment details so the user can review / correct them before saving.
+ *
  * We do not make it a foreground service. This avoids requiring notification permissions
  * and showing a persistent notification banner, while preventing the system from interrupting
  * the user's active task (like Facebook).
@@ -62,6 +67,13 @@ class QuickExpenseOverlayService : Service(), LifecycleOwner, SavedStateRegistry
         get() = savedStateRegistryController.savedStateRegistry
     override val viewModelStore: ViewModelStore get() = vmStore
 
+    // ---- Pre-fill state (updated when a notification preview is requested) ----
+    private val prefilledAmount = mutableStateOf<Double?>(null)
+    private val prefilledCategory = mutableStateOf<Category?>(null)
+    private val prefilledRemark = mutableStateOf("")
+    private val prefilledCurrency = mutableStateOf<String?>(null)
+    private val isFromNotification = mutableStateOf(false)
+
     override fun onCreate() {
         super.onCreate()
 
@@ -72,6 +84,36 @@ class QuickExpenseOverlayService : Service(), LifecycleOwner, SavedStateRegistry
         lifecycleRegistry.currentState = Lifecycle.State.RESUMED
 
         showOverlay()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_SHOW_NOTIFICATION_PREVIEW) {
+            // Update pre-fill state from LLM-extracted extras
+            val amount = if (intent.hasExtra(EXTRA_AMOUNT)) intent.getDoubleExtra(EXTRA_AMOUNT, 0.0).takeIf { it > 0 } else null
+            val categoryName = intent.getStringExtra(EXTRA_CATEGORY)
+            val category = categoryName?.let {
+                runCatching { Category.valueOf(it) }.getOrNull()
+            }
+            val remark = intent.getStringExtra(EXTRA_REMARK) ?: ""
+            val currency = intent.getStringExtra(EXTRA_CURRENCY)
+            val fromNotif = intent.getBooleanExtra(EXTRA_IS_FROM_NOTIFICATION, false)
+
+            prefilledAmount.value = amount
+            prefilledCategory.value = category
+            prefilledRemark.value = remark
+            prefilledCurrency.value = currency
+            isFromNotification.value = fromNotif
+
+            // If overlay is already showing, the Compose state update will re-compose it.
+            // If it wasn't showing yet (service just started via onCreate → showOverlay),
+            // the values are already set before setContent reads them.
+            Log.d(
+                TAG,
+                "Notification preview received: amount=$amount, category=$category, " +
+                        "remark=$remark, currency=$currency"
+            )
+        }
+        return START_NOT_STICKY
     }
 
     private fun showOverlay() {
@@ -85,6 +127,10 @@ class QuickExpenseOverlayService : Service(), LifecycleOwner, SavedStateRegistry
             setContent {
                 NexExpendTheme {
                     QuickExpenseTopPopup(
+                        initialAmount = prefilledAmount.value,
+                        initialCategory = prefilledCategory.value,
+                        initialNote = prefilledRemark.value,
+                        isFromNotification = isFromNotification.value,
                         onSave = { amount, category, note ->
                             saveExpense(amount, category, note)
                             closeOverlay()
@@ -111,12 +157,12 @@ class QuickExpenseOverlayService : Service(), LifecycleOwner, SavedStateRegistry
 
         overlayView = composeView
 
-        Log.d("QuickExpense", "Before addView")
+        Log.d(TAG, "Before addView")
         try {
             windowManager.addView(composeView, params)
-            Log.d("QuickExpense", "After addView")
+            Log.d(TAG, "After addView")
         } catch (e: Exception) {
-            Log.e("QuickExpense", "Failed to add overlay view to WindowManager", e)
+            Log.e(TAG, "Failed to add overlay view to WindowManager", e)
             Toast.makeText(this, "Overlay permission is required", Toast.LENGTH_LONG).show()
             stopSelf()
         }
@@ -137,7 +183,7 @@ class QuickExpenseOverlayService : Service(), LifecycleOwner, SavedStateRegistry
                 timeLabel = timeFormat.format(now)
             )
             repository.addTransaction(transaction)
-            Log.d("QuickExpense", "Saved expense: $amount ${category.label}")
+            Log.d(TAG, "Saved expense: $amount ${category.label}")
         }
     }
 
@@ -168,4 +214,20 @@ class QuickExpenseOverlayService : Service(), LifecycleOwner, SavedStateRegistry
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    companion object {
+        private const val TAG = "QuickExpenseOverlay"
+
+        /** Intent action that triggers a pre-filled notification preview in the overlay. */
+        const val ACTION_SHOW_NOTIFICATION_PREVIEW =
+            "com.nextgen.expend.ACTION_SHOW_NOTIFICATION_PREVIEW"
+
+        // Intent extras
+        const val EXTRA_AMOUNT = "extra_amount"
+        const val EXTRA_CURRENCY = "extra_currency"
+        const val EXTRA_CATEGORY = "extra_category"
+        const val EXTRA_REMARK = "extra_remark"
+        const val EXTRA_BANK_NAME = "extra_bank_name"
+        const val EXTRA_IS_FROM_NOTIFICATION = "extra_is_from_notification"
+    }
 }
