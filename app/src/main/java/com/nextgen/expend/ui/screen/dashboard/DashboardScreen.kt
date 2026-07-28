@@ -24,10 +24,10 @@ import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.DirectionsCar
+import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.ShoppingBag
@@ -74,6 +74,7 @@ fun DashboardScreen(
     smartTip: String,
     llmStatus: LocalLlmService.Status,
     onRefreshTip: () -> Unit,
+    onLoadModel: () -> Unit,
     onAddExpense: () -> Unit,
     onHistory: () -> Unit,
     onInsights: () -> Unit,
@@ -101,9 +102,14 @@ fun DashboardScreen(
                     IconButton(onClick = onSearch) {
                         Icon(Icons.Outlined.Search, contentDescription = "Search")
                     }
-                    IconButton(onClick = {}) {
-                        Icon(Icons.Outlined.Notifications, contentDescription = "Notifications")
-                    }
+                    Icon(
+                        Icons.Outlined.Notifications,
+                        contentDescription = null,
+                        tint = scheme.primary,
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp)
+                            .size(24.dp)
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = scheme.surface,
@@ -219,7 +225,7 @@ fun DashboardScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Categories", style = MaterialTheme.typography.headlineSmall)
-                TextButton(onClick = {}) {
+                TextButton(onClick = onInsights) {
                     Text(
                         "See All",
                         style = MaterialTheme.typography.bodyMedium.copy(color = scheme.onSurfaceVariant)
@@ -242,7 +248,7 @@ fun DashboardScreen(
                                 .clip(MaterialTheme.shapes.large)
                                 .border(1.dp, scheme.outlineVariant, MaterialTheme.shapes.large)
                                 .background(scheme.surface)
-                                .clickable {},
+                                .clickable(onClick = onSearch),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -287,7 +293,6 @@ fun DashboardScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {}
                         .padding(vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -403,6 +408,32 @@ fun DashboardScreen(
                         Icons.Outlined.ChevronRight,
                         contentDescription = "Refresh",
                         tint = scheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            if (llmStatus == LocalLlmService.Status.ERROR) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.small)
+                        .clickable(onClick = onLoadModel)
+                        .padding(top = 10.dp, bottom = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Outlined.FileUpload,
+                        contentDescription = null,
+                        tint = scheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        "Load model from device",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            color = scheme.primary,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     )
                 }
             }

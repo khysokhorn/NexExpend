@@ -32,6 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nextgen.expend.data.model.Category
 import java.text.DecimalFormat
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private val displayCategories = listOf(
     Category.DINING,
@@ -247,8 +250,11 @@ fun AddExpenseScreen(
                             tint = scheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
+                        val today = remember {
+                            "Today, " + SimpleDateFormat("MMM d yyyy", Locale.US).format(Date())
+                        }
                         Text(
-                            "Today, Jun 18 2026",
+                            today,
                             style = MaterialTheme.typography.bodyLarge.copy(color = scheme.onSurface)
                         )
                     }
@@ -419,12 +425,14 @@ fun CurrencySelector(
 ) {
     val items = Currency.entries
 
+    val scheme = MaterialTheme.colorScheme
+
     BoxWithConstraints(
         modifier = modifier
             .wrapContentWidth()
             .height(40.dp)
             .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xFFF3F4F6))
+            .background(scheme.surfaceVariant)
             .padding(3.dp)
     ) {
         val itemWidth = maxWidth / items.size
@@ -445,10 +453,10 @@ fun CurrencySelector(
                 .fillMaxHeight(),
             shape = RoundedCornerShape(20.dp),
             elevation = CardDefaults.cardElevation(
-                defaultElevation = 5.dp
+                defaultElevation = 0.dp
             ),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = scheme.primary
             )
         ) {}
 
@@ -459,9 +467,9 @@ fun CurrencySelector(
 
                 val textColor by animateColorAsState(
                     if (currency == selected)
-                        Color.White
+                        scheme.onPrimary
                     else
-                        MaterialTheme.colorScheme.onSurfaceVariant,
+                        scheme.onSurfaceVariant,
                     label = ""
                 )
 

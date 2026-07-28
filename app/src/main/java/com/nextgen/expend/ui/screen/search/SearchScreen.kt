@@ -259,7 +259,6 @@ private fun SearchResultRow(
     Row(
         modifier              = Modifier
             .fillMaxWidth()
-            .clickable {}
             .padding(vertical = 14.dp),
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween

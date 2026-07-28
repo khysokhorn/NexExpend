@@ -19,15 +19,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import com.nextgen.expend.data.CategoryStat
 import com.nextgen.expend.data.model.Transaction
 import com.nextgen.expend.data.model.TransactionType
-import com.nextgen.expend.data.monthlyBarData
-import com.nextgen.expend.data.weeklyBarData
-import com.nextgen.expend.data.weeklyStats
-import com.nextgen.expend.data.yearlyBarData
 import com.nextgen.expend.ui.components.BottomNavBar
 import com.nextgen.expend.ui.components.NavTab
+import java.util.Locale
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
@@ -68,46 +67,24 @@ fun InsightsScreen(
             .sortedByDescending { it.amount }
     }
     var period by remember { mutableStateOf(Period.WEEKLY) }
+    val context = LocalContext.current
 
     // ── Vico model producer ──────────────────────────────────────────────────
+    // Transactions only carry a display label (dateLabel), not a real timestamp,
+    // so a true day/month time series isn't available yet — show one real bar
+    // sized to actual total spend instead of a fabricated per-period trend.
     val modelProducer = remember { CartesianChartModelProducer() }
+    val dataForPeriod = listOf(totalExpense.toFloat().coerceAtLeast(0f))
 
-    val dataForPeriod = when (period) {
-        Period.WEEKLY -> weeklyBarData
-        Period.MONTHLY -> monthlyBarData
-        Period.YEARLY -> yearlyBarData
-    }
-
-    LaunchedEffect(period) {
+    LaunchedEffect(period, totalExpense) {
         modelProducer.runTransaction {
             columnSeries { series(dataForPeriod) }
         }
     }
 
-    val xLabels = when (period) {
-        Period.WEEKLY -> listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-        Period.MONTHLY -> (1..12).map { "$it" }
-        Period.YEARLY -> listOf(
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec"
-        )
-    }
+    val xLabels = listOf(period.label)
 
-    val totalSpend = when (period) {
-        Period.WEEKLY -> $$"$0"
-        Period.MONTHLY -> $$"$0"
-        Period.YEARLY -> $$"$0"
-    }
+    val totalSpend = "$%,.2f".format(Locale.US, totalExpense)
 
     // Vico column layer built with rememberLineComponent (correct 2.x API)
     val columnLayer = rememberColumnCartesianLayer(
@@ -135,7 +112,9 @@ fun InsightsScreen(
                     )
                 },
                 actions = {
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = {
+                        Toast.makeText(context, "Export coming soon", Toast.LENGTH_SHORT).show()
+                    }) {
                         Icon(Icons.Outlined.Share, contentDescription = "Export")
                     }
                 },
@@ -206,12 +185,14 @@ fun InsightsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                val topCategory = dynamicStats.firstOrNull()
                 StatCard(
                     modifier = Modifier.weight(1f),
                     label = "TOP CATEGORY",
-                    value = "Housing",
-                    sub = "12% vs last period",
-                    subIsError = true,
+                    value = topCategory?.category?.label ?: "—",
+                    sub = topCategory?.let { "%.0f%% of total spend".format(it.percent) }
+                        ?: "No expenses yet",
+                    subIsError = false,
                     scheme = scheme,
                 )
                 AnimatedContent(
@@ -292,7 +273,15 @@ fun InsightsScreen(
             )
             Spacer(Modifier.height(12.dp))
 
-            weeklyStats.forEach { stat ->
+            if (dynamicStats.isEmpty()) {
+                Text(
+                    "No expenses recorded yet.",
+                    style = MaterialTheme.typography.bodyMedium.copy(color = scheme.onSurfaceVariant),
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
+            }
+
+            dynamicStats.forEach { stat ->
                 CategoryBreakdownRow(stat = stat, scheme = scheme)
                 HorizontalDivider(
                     color = scheme.outlineVariant.copy(alpha = 0.5f),
@@ -308,7 +297,9 @@ fun InsightsScreen(
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.large)
                     .background(scheme.primary)
-                    .clickable {}
+                    .clickable {
+                        Toast.makeText(context, "Export coming soon", Toast.LENGTH_SHORT).show()
+                    }
                     .padding(20.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -396,7 +387,6 @@ private fun CategoryBreakdownRow(stat: CategoryStat, scheme: ColorScheme) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {}
             .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween

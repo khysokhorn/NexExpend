@@ -1,5 +1,6 @@
 package com.nextgen.expend.ui.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nextgen.expend.data.TransactionRepository
@@ -45,6 +46,13 @@ class TransactionViewModel(
         viewModelScope.launch {
             val tip = localLlmService.generateFinancialTip(transactions.value)
             _smartTip.value = tip
+        }
+    }
+
+    fun loadModelFromUri(uri: Uri) {
+        viewModelScope.launch {
+            localLlmService.loadModelFromUri(uri)
+            generateSmartTip()
         }
     }
 

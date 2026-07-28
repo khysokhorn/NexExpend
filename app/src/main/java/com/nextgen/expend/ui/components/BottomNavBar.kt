@@ -1,6 +1,5 @@
 package com.nextgen.expend.ui.components
 
-import android.R.color.white
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -13,7 +12,6 @@ import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 enum class NavTab { HOME, HISTORY, ADD, INSIGHTS }
@@ -29,7 +27,7 @@ fun BottomNavBar(
     val scheme = MaterialTheme.colorScheme
 
     NavigationBar(
-        modifier = Modifier.background(Color.White),
+        modifier = Modifier.background(scheme.surface),
         containerColor = scheme.surface,
         tonalElevation = 0.dp,
     ) {

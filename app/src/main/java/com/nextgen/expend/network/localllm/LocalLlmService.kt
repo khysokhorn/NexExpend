@@ -1,6 +1,7 @@
 package com.nextgen.expend.network.localllm
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Content
@@ -56,7 +57,6 @@ class LocalLlmService(private val context: Context) {
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     private val modelFileName = "granite-4.0-350m_q8_ekv1280.litertlm"
-    private val expectedModelSize = 468209584L // 468 MB
 
     private var engine: Engine? = null
 
@@ -64,15 +64,21 @@ class LocalLlmService(private val context: Context) {
     //  Initialisation
     // -------------------------------------------------------------------------
 
-    suspend fun initialize() = withContext(Dispatchers.IO) {
-        if (_status.value == Status.READY) return@withContext
+    /**
+     * Initialises the engine from whatever model file is currently on disk
+     * (falling back to the bundled asset, if any). Pass [forceReload] to
+     * re-run this after [loadModelFromUri] swaps the model file in place.
+     */
+    suspend fun initialize(forceReload: Boolean = false) = withContext(Dispatchers.IO) {
+        if (_status.value == Status.READY && !forceReload) return@withContext
 
         try {
             val destFile = File(context.filesDir, modelFileName)
 
-            // 1. Copy model from assets if missing or incomplete
-            if (!destFile.exists() || destFile.length() != expectedModelSize) {
-                Log.d(TAG, "Model file not found or incomplete. Copying from assets...")
+            // 1. Copy model from assets if missing (no-op when a model was
+            //    already loaded onto disk via loadModelFromUri).
+            if (!destFile.exists()) {
+                Log.d(TAG, "Model file not found. Copying from assets...")
                 _status.value = Status.COPYING_MODEL
 
                 context.assets.open(modelFileName).use { input ->
@@ -92,6 +98,8 @@ class LocalLlmService(private val context: Context) {
             _status.value = Status.INITIALIZING
             Log.d(TAG, "Initializing LiteRT Engine...")
 
+            engine?.close()
+
             val engineConfig = EngineConfig(
                 modelPath = destFile.absolutePath,
                 backend = Backend.CPU(),
@@ -110,6 +118,42 @@ class LocalLlmService(private val context: Context) {
             Log.e(TAG, "Failed to initialize LiteRT Engine", e)
             _status.value = Status.ERROR
             _errorMessage.value = e.message ?: "Unknown initialization error"
+        }
+    }
+
+    /**
+     * Copies a user-picked `.litertlm` file (e.g. from a document picker) into
+     * app storage and (re)initialises the engine against it. Lets the app ship
+     * without bundling the multi-hundred-MB model in the APK/assets — the user
+     * supplies it from local storage instead.
+     */
+    suspend fun loadModelFromUri(uri: Uri) = withContext(Dispatchers.IO) {
+        try {
+            _status.value = Status.COPYING_MODEL
+            engine?.close()
+            engine = null
+
+            val destFile = File(context.filesDir, modelFileName)
+            val input = context.contentResolver.openInputStream(uri)
+                ?: throw IllegalStateException("Unable to open the selected file")
+
+            input.use { stream ->
+                FileOutputStream(destFile).use { output ->
+                    val buffer = ByteArray(8 * 1024)
+                    var bytesRead: Int
+                    while (stream.read(buffer).also { bytesRead = it } != -1) {
+                        output.write(buffer, 0, bytesRead)
+                    }
+                    output.flush()
+                }
+            }
+
+            Log.d(TAG, "Model loaded from local storage (${destFile.length()} bytes).")
+            initialize(forceReload = true)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load model from picked file", e)
+            _status.value = Status.ERROR
+            _errorMessage.value = e.message ?: "Failed to load model"
         }
     }
 

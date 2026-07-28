@@ -310,7 +310,29 @@ class NotificationInterceptorService : NotificationListenerService() {
         private val SUPPORTED_BANK_PACKAGES =
             BANK_PACKAGES.keys
 
+        // NexExpend logs EXPENSES, so the trigger keywords are outgoing-money
+        // signals (sent/paid/transferred/withdrawn) — incoming/received money is
+        // explicitly ignored below since this flow only ever saves TransactionType.EXPENSE.
         private val PAYMENT_KEYWORDS = listOf(
+            "sent",
+            "money sent",
+            "payment sent",
+            "successfully sent",
+            "payment made",
+            "you paid",
+            "paid to",
+            "transferred to",
+            "transfer to",
+            "debited",
+            "withdraw",
+            "withdrawal",
+            "purchase",
+            "បានផ្ញើប្រាក់",
+            "បានបង់ប្រាក់",
+            "ដកប្រាក់"
+        )
+
+        private val IGNORED_KEYWORDS = listOf(
             "received",
             "money received",
             "payment received",
@@ -319,28 +341,15 @@ class NotificationInterceptorService : NotificationListenerService() {
             "credit alert",
             "incoming transfer",
             "cash in",
-            "បានទទួលប្រាក់",
-            "ទទួលបានប្រាក់",
-            "ទទួលប្រាក់",
-            "ប្រាក់ចូល"
-        )
-
-        private val IGNORED_KEYWORDS = listOf(
-            "sent",
-            "paid",
-            "payment made",
-            "transferred to",
-            "withdraw",
-            "withdrawal",
-            "debited",
             "failed",
             "declined",
             "pending",
             "otp",
             "verification code",
-            "បានផ្ញើប្រាក់",
-            "បានបង់ប្រាក់",
-            "ដកប្រាក់",
+            "បានទទួលប្រាក់",
+            "ទទួលបានប្រាក់",
+            "ទទួលប្រាក់",
+            "ប្រាក់ចូល",
             "មិនជោគជ័យ"
         )
 

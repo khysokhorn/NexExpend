@@ -1,5 +1,7 @@
 package com.nextgen.expend.navigation
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,6 +24,12 @@ fun AppNavHost(
     val smartTip by viewModel.smartTip.collectAsState()
     val llmStatus by viewModel.llmStatus.collectAsState()
 
+    val modelPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { viewModel.loadModelFromUri(it) }
+    }
+
     NavHost(
         navController    = navController,
         startDestination = Routes.DASHBOARD,
@@ -32,6 +40,7 @@ fun AppNavHost(
                 smartTip = smartTip,
                 llmStatus = llmStatus,
                 onRefreshTip = { viewModel.generateSmartTip() },
+                onLoadModel = { modelPickerLauncher.launch(arrayOf("*/*")) },
                 onAddExpense = { navController.navigate(Routes.ADD_EXPENSE) },
                 onHistory    = { navController.navigate(Routes.TRANSACTION_HISTORY) },
                 onInsights   = { navController.navigate(Routes.INSIGHTS) },
