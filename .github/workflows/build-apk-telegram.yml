@@ -35,18 +35,6 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      # NexExpend resolves kh.com.nexgen:base-bom/base-ui/base-navigation/base-database
-      # straight from the private khysokhorn/BaseProject git repo (see the `sourceControl`
-      # block in settings.gradle.kts) — Gradle clones it and builds those modules from
-      # source itself, no publish step needed. That clone still needs git credentials for
-      # the private repo, so rewrite the URL to embed a BASEPROJECT_PAT (a PAT with at
-      # least read access to khysokhorn/BaseProject) before Gradle runs.
-      - name: Configure git credentials for BaseProject
-        env:
-          BASEPROJECT_PAT: ${{ secrets.BASEPROJECT_PAT }}
-        run: |
-          git config --global url."https://x-access-token:${BASEPROJECT_PAT}@github.com/khysokhorn/BaseProject.git".insteadOf "https://github.com/khysokhorn/BaseProject.git"
-
       # Optional: the on-device LLM model (.litertlm) is too large to commit to git
       # (see .gitignore) and is normally staged from a local `models/` directory by
       # the `copyLocalModel` Gradle task (app/build.gradle.kts) before packaging.

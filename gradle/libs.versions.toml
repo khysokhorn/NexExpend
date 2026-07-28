@@ -1,6 +1,5 @@
 [versions]
 agp = "9.2.1"
-baseBom = "latest.integration"
 coreKtx = "1.10.1"
 junit = "4.13.2"
 junitVersion = "1.1.5"
@@ -23,10 +22,6 @@ ksp = "2.2.10-2.0.2"
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
-base-bom = { module = "kh.com.nexgen:base-bom", version.ref = "baseBom" }
-base-ui = { module = "kh.com.nexgen:base-ui", version.ref = "baseBom" }
-base-navigation = { module = "kh.com.nexgen:base-navigation", version.ref = "baseBom" }
-base-database = { module = "kh.com.nexgen:base-database", version.ref = "baseBom" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

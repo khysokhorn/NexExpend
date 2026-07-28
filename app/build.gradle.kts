@@ -79,7 +79,6 @@ android {
 
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
-    implementation(platform(libs.base.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui)
@@ -89,11 +88,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.firebase.ai)
-
-    // Base project modules (via BOM)
-    implementation(libs.base.ui)
-    implementation(libs.base.navigation)
-    implementation(libs.base.database)
 
     // Room persistence for local transaction storage
     implementation(libs.androidx.room.runtime)
