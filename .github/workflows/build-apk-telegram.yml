@@ -35,6 +35,25 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
+      # NexExpend depends on kh.com.nexgen:base-bom/base-ui/base-navigation/base-database,
+      # which are only resolvable via mavenLocal() (see settings.gradle.kts). Those modules
+      # live in the private khysokhorn/BaseProject repo, so build it here and publish to
+      # ~/.m2 before building NexExpend. Requires a BASEPROJECT_PAT secret (a PAT with at
+      # least read access to khysokhorn/BaseProject) since GITHUB_TOKEN can't check out a
+      # different private repo.
+      - name: Checkout BaseProject (kh.com.nexgen:* dependency source)
+        uses: actions/checkout@v4
+        with:
+          repository: khysokhorn/BaseProject
+          token: ${{ secrets.BASEPROJECT_PAT }}
+          path: BaseProject
+
+      - name: Publish BaseProject modules to Maven Local
+        working-directory: BaseProject
+        run: |
+          chmod +x gradlew
+          ./gradlew publishAll --stacktrace
+
       # Optional: the on-device LLM model (.litertlm) is too large to commit to git
       # (see .gitignore) and is normally staged from a local `models/` directory by
       # the `copyLocalModel` Gradle task (app/build.gradle.kts) before packaging.
