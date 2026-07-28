@@ -34,6 +34,7 @@ class TransactionViewModel(
     val smartTip: StateFlow<String> = _smartTip.asStateFlow()
 
     val llmStatus: StateFlow<LocalLlmService.Status> = localLlmService.status
+    val modelDownloadProgress: StateFlow<Float?> = localLlmService.downloadProgress
 
     init {
         viewModelScope.launch {
@@ -52,6 +53,13 @@ class TransactionViewModel(
     fun loadModelFromUri(uri: Uri) {
         viewModelScope.launch {
             localLlmService.loadModelFromUri(uri)
+            generateSmartTip()
+        }
+    }
+
+    fun downloadModelFromUrl(url: String) {
+        viewModelScope.launch {
+            localLlmService.downloadModelFromUrl(url)
             generateSmartTip()
         }
     }

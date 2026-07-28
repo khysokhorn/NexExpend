@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 
 /**
  * On-device LLM service powered by LiteRT (litertlm-android 0.14.0).
@@ -55,6 +57,10 @@ class LocalLlmService(private val context: Context) {
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    /** 0f..1f while a [downloadModelFromUrl] is in progress, null otherwise. */
+    private val _downloadProgress = MutableStateFlow<Float?>(null)
+    val downloadProgress: StateFlow<Float?> = _downloadProgress.asStateFlow()
 
     private val modelFileName = "granite-4.0-350m_q8_ekv1280.litertlm"
 
@@ -154,6 +160,98 @@ class LocalLlmService(private val context: Context) {
             Log.e(TAG, "Failed to load model from picked file", e)
             _status.value = Status.ERROR
             _errorMessage.value = e.message ?: "Failed to load model"
+        }
+    }
+
+    /**
+     * Downloads a `.litertlm` model straight from a URL (e.g. a Hugging Face
+     * `resolve/main/...` link) into app storage and (re)initialises the engine.
+     * Accepts a HF "blob" page URL too — normalized to the raw "resolve" link.
+     */
+    suspend fun downloadModelFromUrl(url: String) = withContext(Dispatchers.IO) {
+        val tempFile = File(context.filesDir, "$modelFileName.download")
+        try {
+            _status.value = Status.COPYING_MODEL
+            _downloadProgress.value = 0f
+            engine?.close()
+            engine = null
+
+            downloadWithRedirects(normalizeModelUrl(url), tempFile) { progress ->
+                _downloadProgress.value = progress
+            }
+
+            val destFile = File(context.filesDir, modelFileName)
+            if (destFile.exists()) destFile.delete()
+            if (!tempFile.renameTo(destFile)) {
+                throw IllegalStateException("Could not finalize the downloaded model file")
+            }
+
+            Log.d(TAG, "Model downloaded (${destFile.length()} bytes).")
+            _downloadProgress.value = null
+            initialize(forceReload = true)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to download model from $url", e)
+            tempFile.delete()
+            _status.value = Status.ERROR
+            _errorMessage.value = e.message ?: "Failed to download model"
+            _downloadProgress.value = null
+        }
+    }
+
+    private fun normalizeModelUrl(url: String): String =
+        if ("huggingface.co" in url && "/blob/" in url) url.replace("/blob/", "/resolve/") else url
+
+    /** Follows redirects manually — HttpURLConnection won't cross http<->https by default. */
+    private fun downloadWithRedirects(
+        urlString: String,
+        destFile: File,
+        maxRedirects: Int = 5,
+        onProgress: (Float) -> Unit
+    ) {
+        var currentUrl = urlString
+        var redirects = 0
+
+        while (true) {
+            val connection = URL(currentUrl).openConnection() as HttpURLConnection
+            connection.instanceFollowRedirects = false
+            connection.connectTimeout = 15_000
+            connection.readTimeout = 30_000
+            connection.setRequestProperty("User-Agent", "NexExpend-Android")
+
+            try {
+                val code = connection.responseCode
+                if (code in 300..399) {
+                    val location = connection.getHeaderField("Location")
+                        ?: throw IllegalStateException("Redirect with no Location header")
+                    if (++redirects > maxRedirects) throw IllegalStateException("Too many redirects")
+                    currentUrl = location
+                    continue
+                }
+
+                if (code !in 200..299) {
+                    throw IllegalStateException("Download failed: HTTP $code")
+                }
+
+                val contentLength = connection.contentLengthLong
+                connection.inputStream.use { input ->
+                    FileOutputStream(destFile).use { output ->
+                        val buffer = ByteArray(64 * 1024)
+                        var totalRead = 0L
+                        var bytesRead: Int
+                        while (input.read(buffer).also { bytesRead = it } != -1) {
+                            output.write(buffer, 0, bytesRead)
+                            totalRead += bytesRead
+                            if (contentLength > 0) {
+                                onProgress(totalRead.toFloat() / contentLength.toFloat())
+                            }
+                        }
+                        output.flush()
+                    }
+                }
+                return
+            } finally {
+                connection.disconnect()
+            }
         }
     }
 
