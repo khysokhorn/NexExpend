@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.gms.google.services)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -56,6 +57,11 @@ dependencies {
     implementation(libs.base.ui)
     implementation(libs.base.navigation)
     implementation(libs.base.database)
+
+    // Room persistence for local transaction storage
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     // LiteRT LLM – use litertlm-android (0.14.0+) only; do NOT add libs.litertlm (alpha05) as it causes duplicate class conflicts
     implementation("com.google.ai.edge.litertlm:litertlm-android:latest.release")
 
@@ -73,6 +79,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.gson)
     implementation(libs.koin.android)
 }
