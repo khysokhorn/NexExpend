@@ -15,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,20 +26,6 @@ import com.nextgen.expend.data.model.TransactionType
 import com.nextgen.expend.ui.components.BottomNavBar
 import com.nextgen.expend.ui.components.NavTab
 import java.util.Locale
-import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
-import com.patrykandpatrick.vico.compose.common.fill
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
-import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
-import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
-import com.patrykandpatrick.vico.core.common.shape.Shape as VicoShape
-
-private enum class Period(val label: String) { WEEKLY("Weekly"), MONTHLY("Monthly"), YEARLY("Yearly") }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,36 +51,9 @@ fun InsightsScreen(
             }
             .sortedByDescending { it.amount }
     }
-    var period by remember { mutableStateOf(Period.WEEKLY) }
     val context = LocalContext.current
 
-    // ── Vico model producer ──────────────────────────────────────────────────
-    // Transactions only carry a display label (dateLabel), not a real timestamp,
-    // so a true day/month time series isn't available yet — show one real bar
-    // sized to actual total spend instead of a fabricated per-period trend.
-    val modelProducer = remember { CartesianChartModelProducer() }
-    val dataForPeriod = listOf(totalExpense.toFloat().coerceAtLeast(0f))
-
-    LaunchedEffect(period, totalExpense) {
-        modelProducer.runTransaction {
-            columnSeries { series(dataForPeriod) }
-        }
-    }
-
-    val xLabels = listOf(period.label)
-
     val totalSpend = "$%,.2f".format(Locale.US, totalExpense)
-
-    // Vico column layer built with rememberLineComponent (correct 2.x API)
-    val columnLayer = rememberColumnCartesianLayer(
-        columnProvider = ColumnCartesianLayer.ColumnProvider.series(
-            rememberLineComponent(
-                fill = fill(scheme.primary),
-                thickness = if (period == Period.WEEKLY) 20.dp else 12.dp,
-                shape = VicoShape.Rectangle,
-            )
-        )
-    )
 
     Scaffold(
         topBar = {
@@ -146,40 +104,6 @@ fun InsightsScreen(
         ) {
             Spacer(Modifier.height(24.dp))
 
-            // ── Period Toggle ────────────────────────────────────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.large)
-                    .border(1.dp, scheme.outlineVariant, MaterialTheme.shapes.large)
-                    .background(scheme.surfaceVariant.copy(alpha = 0.5f))
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Period.entries.forEach { p ->
-                    val isSelected = p == period
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(MaterialTheme.shapes.medium)
-                            .background(if (isSelected) scheme.primary else Color.Transparent)
-                            .clickable { period = p }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            p.label,
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) scheme.onPrimary else scheme.onSurfaceVariant
-                            )
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-
             // ── Bento Stats ──────────────────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -209,56 +133,6 @@ fun InsightsScreen(
                         scheme = scheme,
                     )
                 }
-            }
-
-            Spacer(Modifier.height(28.dp))
-
-            // ── Vico Bar Chart ───────────────────────────────────────────────
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.large)
-                    .border(1.dp, scheme.outlineVariant, MaterialTheme.shapes.large)
-                    .background(scheme.surface)
-                    .padding(20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    Column {
-                        Text(
-                            "Spending Analysis",
-                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold)
-                        )
-                        Text(
-                            "Breakdown of total expenditures",
-                            style = MaterialTheme.typography.labelMedium.copy(color = scheme.onSurfaceVariant)
-                        )
-                    }
-                    Text(
-                        totalSpend,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
-
-                Spacer(Modifier.height(20.dp))
-
-                CartesianChartHost(
-                    chart = rememberCartesianChart(
-                        columnLayer,
-                        bottomAxis = HorizontalAxis.rememberBottom(
-                            valueFormatter = CartesianValueFormatter { _, x, _ ->
-                                xLabels.getOrElse(x.toInt()) { "" }
-                            }
-                        ),
-                    ),
-                    modelProducer = modelProducer,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                )
             }
 
             Spacer(Modifier.height(28.dp))
