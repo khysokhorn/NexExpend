@@ -102,11 +102,6 @@ dependencies {
     // LiteRT LLM – use litertlm-android (0.14.0+) only; do NOT add libs.litertlm (alpha05) as it causes duplicate class conflicts
     implementation("com.google.ai.edge.litertlm:litertlm-android:latest.release")
 
-    // Vico Charts – banking-grade chart library for Compose
-    implementation(libs.vico.compose)
-    implementation(libs.vico.compose.m3)
-    implementation(libs.vico.core)
-
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
